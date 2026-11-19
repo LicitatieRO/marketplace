@@ -56,6 +56,31 @@ describe("POST /api/account/identities unlink guard", () => {
     expect(unlinkIdentity).not.toHaveBeenCalled();
   });
 
+  it("returns 404 for a foreign identity id", async () => {
+    getUserIdentities.mockResolvedValue({
+      data: {
+        identities: [
+          { id: "oauth", provider: "google", identity_id: "g-1" },
+          { id: "email", provider: "email", identity_id: "e-1" },
+        ],
+      },
+      error: null,
+    });
+    const { POST } = await import("@/app/api/account/identities/route");
+    const response = await POST(
+      new Request("http://localhost:3000/api/account/identities", {
+        method: "POST",
+        headers: {
+          origin: "http://localhost:3000",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ action: "unlink", identityId: "other-user-id" }),
+      }),
+    );
+    expect(response.status).toBe(404);
+    expect(unlinkIdentity).not.toHaveBeenCalled();
+  });
+
   it("unlinks when another identity remains", async () => {
     getUserIdentities.mockResolvedValue({
       data: {

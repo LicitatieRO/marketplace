@@ -69,6 +69,20 @@ function deleteRequest(body: Record<string, unknown>) {
 }
 
 describe("POST /api/account/delete", () => {
+  it("refuses delete when viewer cannot be loaded (fail closed)", async () => {
+    getViewer.mockResolvedValue(null);
+    const { POST } = await import("@/app/api/account/delete/route");
+    const response = await POST(
+      deleteRequest({
+        confirm: true,
+        confirmation: "DELETE",
+      }),
+    );
+    expect(response.status).toBe(403);
+    expect(deleteUser).not.toHaveBeenCalled();
+    expect(accountDeleteBlockReason).not.toHaveBeenCalled();
+  });
+
   it("does not call deleteUser for staff accounts", async () => {
     getViewer.mockResolvedValue({
       id: "user-1",
@@ -98,6 +112,36 @@ describe("POST /api/account/delete", () => {
       }),
     );
     expect(response.status).toBe(409);
+    expect(deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("returns 409 for has_history with GDPR email guidance", async () => {
+    accountDeleteBlockReason.mockResolvedValue("has_history");
+    const { POST } = await import("@/app/api/account/delete/route");
+    const response = await POST(
+      deleteRequest({
+        confirm: true,
+        confirmation: "DELETE",
+      }),
+    );
+    const body = await response.json();
+    expect(response.status).toBe(409);
+    expect(body.error).toContain("cannot be deleted automatically");
+    expect(body.error).toContain("GDPR contact address");
+    expect(body.error).toContain("30 calendar days");
+    expect(deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when eligibility reports not_found", async () => {
+    accountDeleteBlockReason.mockResolvedValue("not_found");
+    const { POST } = await import("@/app/api/account/delete/route");
+    const response = await POST(
+      deleteRequest({
+        confirm: true,
+        confirmation: "DELETE",
+      }),
+    );
+    expect(response.status).toBe(404);
     expect(deleteUser).not.toHaveBeenCalled();
   });
 

@@ -1,0 +1,17 @@
+# Auction soft close (POC)
+
+New ascending auctions default to a 120-second soft-close window. An accepted bid inside that window moves the deadline to the earlier of locked database time plus 120 seconds or the hard cap. The cap is 30 minutes after the originally advertised deadline. A bid never shortens the deadline, extends an already closed auction, or extends twice on idempotent replay. Sealed auctions and auctions created before this migration keep fixed deadlines.
+
+`soft_close_seconds` is stored per auction (0 disables, maximum 600). The POC does not expose an owner control to change it; changing defaults is a reviewed database configuration change. The initial deadline and cap are initialized on insert and constrained in PostgreSQL. Existing property-first locks, invitation checks, confidentiality, rate limits and reservation exclusion still apply. Actual extensions create an `auction.extended` audit event with the new deadline and no bid amount. No extra email event is emitted in this milestone.
+
+The listing detail shows the actual window and cap in RO/EN before participation. It fetches its existing no-store listing endpoint, samples database time, and advances a display estimate with `performance.now()`. It synchronizes every 15 seconds while visible. Requests time out after 8 seconds; failed, invalid, changed-auction, or samples older than 30 seconds remove the live bidding state until synchronization succeeds. The browser wall clock never decides eligibility. Network latency still makes the countdown an estimate: the database rechecks time after acquiring the property lock, including when a request waits behind another transaction.
+
+There is no animation or per-second live-region announcement. Desktop/mobile, RO/light and EN/dark browser tests shift client time to 2099, simulate extension responses and network failure/recovery. These mock only the clock read to exercise presentation. The pgTAP suite separately exercises real bid extension, cap, replay, sealed behavior and invitation privacy; existing concurrency tests exercise actual post-lock deadline rejection.
+
+The existing buyer/reservation browser journey also asserts an actual ascending bid extended its server deadline. It then expires only its newly created local fixture through a test-only SQL helper, avoiding an extra two-minute wait in each CI run. This helper requires `E2E_BACKEND=1`, exact loopback app/database URLs, database port 54322 or CI's 15432, and matching property/owner/auction UUIDs. Export the local `DATABASE_URL` privately before running backend tests. This is not an application API or a way to shorten hosted auctions.
+
+## Delivery and recovery
+
+Use the existing reviewed migration/deployment procedure; agents do not apply this migration to hosted Supabase. Release the migration and application together in an isolated staging environment and verify the disclosure before allowing users to start new auctions. The old application does not disclose this rule, so do not leave it serving newly created soft-close auctions during rollout.
+
+An application rollback alone does not undo database rules or existing advertised extensions. Pause new auction creation/bidding during recovery, retain the established deadlines/audit history, and have the operator choose a compatible application version. Do not silently shorten a deadline or disable an active auction's promised extension policy. Live deposits remain disabled.

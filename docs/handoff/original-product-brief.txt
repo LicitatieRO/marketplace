@@ -1,0 +1,53 @@
+I will write in romanian and english, but we may continue in english afterwards
+
+I want to build a site for licitatii in romania, as  I don't see a lot of products doing this
+
+I want to go the Vinted route, but with the possibility to create private auctions; I still need to define the product, but I am thinking of:
+- the customer can sign up for upcoming auctions (either individual auctions for a certain item, or "event" auctions, where there will be a selection of items advertised beforehand)
+- the seller can list the products either as a classic sell (like olx, vinted, lajumate, etc), or, it can create an auction
+- in an auction, it can set the starting price or not (not listing a starting price should be fine)
+- the transport of items would be an external service, like integration with Fan Courier, Sameday, etc
+- on the phone, you should be able to go into a mode like Tinder, where you swipe left-right to enter auctions
+- the event auctions will be with limited spots, usually with items hand-picked (by AI or admins)
+- the business case will include ad banners on the site, ads on the Tinder mode, a percentage of the sell price, a minimum cut (something like max(3 LEI per item, or at least 5-15% of the total sum), buying event tickets (but after we hit 500 weekly users) and buying promovare and your items to be picked for the events, or to be listed on top of the list
+- in the picture form of posting a listing, the site should integrate a non-intrusive edit tool, for backgrounds
+- an integrated AI searched PRP/RPR (Prețul Recomandat de Producător — PRP) and English retail (Recommended Retail Price — RRP)  under identified items
+- also, near PRP, if a product is clearly visible, it can search for the same item on other sites at full retail price (this way, maybe we can implement a click-to-ad-cash for that, as well as showing how cheap the auction price is versus the retail price); of course, if the retail price is getting close to the original (like 15% or less difference), it should be shown, as it might work in disadvantage
+- the site should have localization, mainly for english and romanian (default romanian, but it should check for the device's set language)
+- the description should be able to be generated via AI, as well as being able to opt-in auto-translation
+- the background architecture should include CI/CD, cloud hosting, etc
+- like on olx, when you write a title, it should already recommend you the category and sub-category it might be part of
+- the seller, when setting up the auction, it should be able to modify the auction period, including "Starting now"
+- the seller, if it pulls out the item once it has people auctioning, it should be penalized; i'm thinking of them having to use an insurance, and pay to top auctioneer the insurance if it pulls out the item
+- also, for the buyer to have insurance, it can pay extra for the option that the user will have to pay the item beforehand on the platform, so it knows that the money are insured by us
+- also, of course, the users that are getting over-bided, they will get their money back as credits
+- the credits can be returned as money back, or, used in-store
+- the site should have light and dark mode, using the system's default
+- i'd like to gamify the site, like roulettes with free credits, free transport, 100% chance of event entry, product promotions, etc
+- the user should be able to buy coupons for in-application as gift cards
+- i want, besides general products, for the site to work well with real estate, as I intend to use it, myself
+- also, somehow, I'd like for people to be able to outsource themselves, like fiverr, but this might be on later, as it doesn't really fit, it's hard to make sure people are actually using the the site as an intermediary
+- before an auction is opened, clients should be able to pre-auction
+- clients can add a budget for a product, and auto-drop out of the auction if it goes beyond that threshold
+- the sellers should be able to upload a wide-shot of a bunch of items, even clustered, and an AI to be able to pick them up and suggest listings for them (with price, description, etc)
+- if a listing has 10+ bids, we should add a graph to it and even predictions
+- to be clear, since it will be a general platform, there should be categories and sub-categories for multiple items, just like on olx/emag, etc
+- the real estate listings should handle 360 pictures and virtual tours (maybe find multiple integrations, and maybe get a collaboration going with Insta360, or Matterport)
+- you should be able to sell stuff in-bulk, as in, besides doing a separate listing for a bulk of things, I mean creating a bulk of listing for a discounted solution (like, you'd have 10 books listed individually, but you may create a bulk with all of them for 30% less); this applies for non-auction listings
+- for non-auction listing, you may negotiate, by sending a lower price
+- the user will be able to set a notification meter, of how low he is willing to "listen" for prices negotiations (for example, if the product is listed with 200 lei, he will be able to auto-ignore proces lower than 150 lei; and, another user ,  might tune out notifications of below 100 lei for his 200 lei item)
+- by default, the global notification will be for 50% of the price
+- research the business models of other sites/platforms, as I want to provide competitive prices
+- the listings should be free
+- adding more than 10 pictures should be allowed, but paid (X RON per 5 more images)
+- the users can get validated, using a validation system (maybe find a way to integrate using ROeID or the new Romanian electronic id, or by using a phone number, CNP and email)
+- there will be a messaging system, like on OLX and Vinted, for the product
+- the messaging system should be intuitive, so that they will not be inclined in exchanging personal data, like the telephone number
+- the system should be able to find breach of the system of sharing personal data, like emails, twitter/insta handles, sites or phone numbers
+- in the chat, you will be able to propose new prices, where the other person will be able to accept the new price
+- in the chat, you might be able to tag other products using '@'
+- find a solution for how to make the insurance work, and how to repay the insurance back
+- if it is a person with a bigger stock of the same item (let's say, a T-Shirt), and someone wants to buy more than one, the auction doesn't really make sense in my mind; so, for the people with multiple items, they shouldn't be able create an auction themselves; instead, the buyer, can start an auction, by "locking in" a bulk (a subset of the quantity, let's say 26/50 T-shirts, or even all of them), so that, if the seller accepts the buyer's auction proposal, those items can be either sold directly with the proposed price, or, open it to the rest of the users
+- the open events should be searched with filters and sorting capabilities, just like the products
+- there should be non-intrusive pop-ops, when new events start (you can opt-out of this type of notification)
+- you can opt-in for certain categories to be notified

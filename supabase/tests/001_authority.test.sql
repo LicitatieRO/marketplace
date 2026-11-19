@@ -1,0 +1,12 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+SET search_path=public,extensions;
+SELECT no_plan();
+SELECT has_function('public','get_catalogue',ARRAY[]::text[],'public catalogue RPC exists');
+SELECT has_function('public','get_workspace',ARRAY[]::text[],'private workspace RPC exists');
+SELECT has_function('public','place_bid',ARRAY['uuid','bigint','uuid'],'authoritative bidding RPC exists');
+SELECT has_function('public','advance_reservation',ARRAY['uuid','text','uuid'],'reservation transition RPC exists');
+SELECT has_table('app','properties','physical properties persisted');
+SELECT has_table('app','notification_outbox','transactional outbox exists');
+SELECT * FROM finish();
+ROLLBACK;

@@ -1,0 +1,18 @@
+BEGIN;
+SET search_path=public,extensions;
+SELECT no_plan();
+SELECT ok(EXISTS(SELECT 1 FROM pg_catalog.pg_extension WHERE extname='pg_cron'),'pg_cron extension installed');
+SELECT is((SELECT count(*)::integer FROM cron.job WHERE jobname='marketplace-close-expired' AND schedule='* * * * *' AND command LIKE '%close_expired_auctions()%'),1,'marketplace-close-expired job scheduled every minute');
+INSERT INTO auth.users(id,email,email_confirmed_at) VALUES('99999999-0000-4000-8000-000000000001','cron-owner@test.local',now());
+SELECT set_config('request.jwt.claims','{"sub":"99999999-0000-4000-8000-000000000001","role":"authenticated"}',true);
+CREATE TEMP TABLE cron_fixture AS SELECT public.create_property('Cron expiry flat','Description','Drumul Taberei','Private cron address','apartment',60,2,1,2005,8000000,40000,'{}') AS j;
+CREATE TEMP TABLE cron_auction AS SELECT public.start_auction((SELECT id FROM app.listings WHERE property_id=(SELECT (j->>'id')::uuid FROM cron_fixture) AND transaction_type='sale'),'ascending','public',now()-interval '1 hour',now()+interval '1 hour',8000000,10000) j;
+UPDATE app.auctions SET ends_at=clock_timestamp()-interval '1 second' WHERE id=(SELECT (j->>'id')::uuid FROM cron_auction);
+SELECT is((SELECT status FROM app.auctions WHERE id=(SELECT (j->>'id')::uuid FROM cron_auction)),'active','auction still active before worker');
+RESET ROLE;
+SET LOCAL ROLE service_role;
+SELECT lives_ok('SELECT public.close_expired_auctions()','close_expired_auctions runs as service worker');
+RESET ROLE;
+SELECT is((SELECT status FROM app.auctions WHERE id=(SELECT (j->>'id')::uuid FROM cron_auction)),'closed','close_expired_auctions closes expired auction');
+SELECT * FROM finish();
+ROLLBACK;

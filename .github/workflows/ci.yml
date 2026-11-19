@@ -1,0 +1,307 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+      - release/**
+    tags:
+      - v*
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  quality:
+    name: Quality and demo build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          lfs: true
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26'
+          cache: npm
+      - name: CI classifier unit tests
+        run: node --test .github/scripts/classify-ci.test.mjs
+      - name: Classify changed paths for selective CI
+        id: classify
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF: ${{ github.ref }}
+          CLASSIFY_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+          CLASSIFY_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash .github/scripts/classify-output-step.sh
+      - name: Report selective CI tier
+        run: |
+          echo "Selective CI tier: ${{ steps.classify.outputs.tier }}"
+          echo "Quality mode: ${{ steps.classify.outputs.quality-mode }}"
+          echo "Reason: ${{ steps.classify.outputs.reason }}"
+      - name: Docs-only lightweight verification
+        if: steps.classify.outputs.quality-mode == 'minimal'
+        run: node scripts/scan-secrets.mjs
+      - name: Summarize skipped quality checks
+        if: steps.classify.outputs.quality-mode == 'minimal'
+        run: |
+          echo "Skipped on docs-only change: npm ci, delivery tests, dependency audit, lint, typecheck, unit tests, demo build."
+      - name: Install dependencies for full quality suite
+        if: steps.classify.outputs.quality-mode == 'full'
+        run: npm ci
+      - name: Delivery regression tests
+        if: steps.classify.outputs.quality-mode == 'full'
+        run: node --test scripts/delivery.test.mjs
+      - name: Tracked secret scan
+        if: steps.classify.outputs.quality-mode == 'full'
+        run: node scripts/scan-secrets.mjs
+      - name: Dependency audit
+        if: steps.classify.outputs.quality-mode == 'full'
+        run: node scripts/audit-dependencies.mjs
+      - name: Lint
+        if: steps.classify.outputs.quality-mode == 'full'
+        run: npm run lint
+      - name: Typecheck
+        if: steps.classify.outputs.quality-mode == 'full'
+        run: npm run typecheck
+      - name: Unit tests
+        if: steps.classify.outputs.quality-mode == 'full'
+        run: npm test
+      - name: Build explicit demo without external credentials
+        if: steps.classify.outputs.quality-mode == 'full'
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ''
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ''
+          NEXT_PUBLIC_DEMO_MODE: 'true'
+  backend:
+    name: Database and browser integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          lfs: true
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26'
+          cache: npm
+      - name: Classify changed paths for selective CI
+        id: classify
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF: ${{ github.ref }}
+          CLASSIFY_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+          CLASSIFY_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash .github/scripts/classify-output-step.sh
+      - name: Docs-only backend skip (required check success)
+        if: steps.classify.outputs.backend-mode == 'skip'
+        run: |
+          echo "Selective CI: docs-only pull request — skipping Supabase, pgTAP, concurrency, build, and Playwright."
+          echo "Reason: ${{ steps.classify.outputs.reason }}"
+      - name: Install dependencies for backend integration
+        if: steps.classify.outputs.backend-mode != 'skip'
+        run: npm ci
+      - name: Configure an isolated CI database port
+        if: steps.classify.outputs.backend-mode != 'skip'
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import re
+          import socket
+          import tomllib
+
+          with socket.socket() as probe:
+              probe.bind(('0.0.0.0', 15432))
+          path = pathlib.Path('supabase/config.toml')
+          source = path.read_text()
+          config = tomllib.loads(source)
+          if config['db']['port'] != 54322:
+              raise SystemExit('Unexpected local database port; review CI isolation override.')
+          lines = source.splitlines(keepends=True)
+          section, replacements = None, 0
+          for index, line in enumerate(lines):
+              if line.strip().startswith('['):
+                  section = line.strip()
+              if section == '[db]' and re.match(r'^\s*port\s*=', line):
+                  lines[index] = 'port = 15432\n'
+                  replacements += 1
+          updated = ''.join(lines)
+          config['db']['port'] = 15432
+          if replacements != 1 or tomllib.loads(updated) != config:
+              raise SystemExit('Unable to isolate only the local database port.')
+          path.write_text(updated)
+          print('CI database port 15432 is available and configured.')
+          PY
+      - name: Start real local Supabase services
+        if: steps.classify.outputs.backend-mode != 'skip'
+        run: npx --no-install supabase start -x realtime,studio,edge-runtime,logflare,vector,supavisor,postgres-meta,imgproxy
+      - name: Discover the local database connection without printing credentials
+        if: steps.classify.outputs.backend-mode != 'skip'
+        run: |
+          node --input-type=module <<'JS'
+          import { spawnSync } from 'node:child_process';
+          import { appendFileSync } from 'node:fs';
+          const result = spawnSync('npx', ['--no-install', 'supabase', 'status', '-o', 'json'], { encoding: 'utf8' });
+          if (result.status !== 0) throw new Error('Unable to discover the local database connection.');
+          let DB_URL, url;
+          try {
+            ({ DB_URL } = JSON.parse(result.stdout));
+            if (typeof DB_URL !== 'string' || /[\r\n]/.test(DB_URL)) throw new Error();
+            url = new URL(DB_URL);
+          } catch {
+            throw new Error('Invalid local database connection response.');
+          }
+          if (!['postgres:', 'postgresql:'].includes(url.protocol) || !['127.0.0.1', 'localhost'].includes(url.hostname) || url.port !== '15432') {
+            throw new Error('Unexpected local database connection target.');
+          }
+          appendFileSync(process.env.GITHUB_ENV, `DATABASE_URL=${DB_URL}\n`);
+          JS
+      - run: npm run db:reset
+        if: steps.classify.outputs.backend-mode != 'skip'
+      - name: pgTAP database tests
+        if: steps.classify.outputs.backend-mode == 'full'
+        run: npm run test:db
+      - name: Concurrency and deadline scenarios
+        if: steps.classify.outputs.backend-mode == 'full'
+        run: node scripts/test-concurrency.mjs
+      - name: Summarize skipped database-only checks (app-only tier)
+        if: steps.classify.outputs.backend-mode == 'e2e'
+        run: |
+          echo "Selective CI app-only tier: skipping pgTAP (test:db) and scripts/test-concurrency.mjs."
+          echo "Local Supabase remains up for Playwright test:e2e:backend."
+      - name: Configure local integration accounts and environment
+        if: steps.classify.outputs.backend-mode != 'skip'
+        run: |
+          e2e_password="$(node -e 'process.stdout.write(require("node:crypto").randomBytes(24).toString("base64url"))')"
+          printf '::add-mask::%s\n' "$e2e_password"
+          {
+            printf 'E2E_PASSWORD=%s\n' "$e2e_password"
+            printf 'POC_OWNER_PASSWORD=%s\n' "$e2e_password"
+            printf 'POC_BUYER_PASSWORD=%s\n' "$e2e_password"
+            printf 'POC_DUAL_PASSWORD=%s\n' "$e2e_password"
+            printf 'POC_SWITCHER_ENABLED=true\n'
+          } >> "$GITHUB_ENV"
+      - name: Write ignored local environment without printing credentials
+        if: steps.classify.outputs.backend-mode != 'skip'
+        env:
+          POC_SWITCHER_ENABLED: 'true'
+        run: npm run local:env
+      - name: GoTrue duplicate signup probe (local CI stack)
+        if: steps.classify.outputs.backend-mode != 'skip'
+        run: node --env-file=.env.local --test tests/integration/signup-gotrue.test.mjs
+      - name: Install Playwright browser
+        if: steps.classify.outputs.backend-mode != 'skip'
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Production build for integration tests
+        if: steps.classify.outputs.backend-mode != 'skip'
+        run: npm run build
+      - name: Recovery callback integration probe (local CI stack)
+        if: steps.classify.outputs.backend-mode != 'skip'
+        run: |
+          npm start &
+          server_pid=$!
+          release_probe_server() {
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+            if command -v fuser >/dev/null 2>&1; then
+              fuser -k 3000/tcp 2>/dev/null || true
+            fi
+            for _ in $(seq 1 15); do
+              if ! curl -sf http://127.0.0.1:3000/ > /dev/null 2>&1; then
+                return 0
+              fi
+              sleep 1
+            done
+            echo "Port 3000 still in use after recovery callback probe."
+            exit 1
+          }
+          trap release_probe_server EXIT
+          ready=0
+          for _ in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:3000/ > /dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "Application did not become ready for recovery callback probe."
+            exit 1
+          fi
+          bash .github/scripts/run-recovery-callback-integration.sh
+          release_probe_server
+          trap - EXIT
+        env:
+          CI: 'true'
+          INTEGRATION_BASE_URL: http://127.0.0.1:3000
+          APP_URL: http://127.0.0.1:3000
+          PORT: '3000'
+      - name: Recovery outbox integration probe (local CI stack)
+        if: steps.classify.outputs.backend-mode != 'skip'
+        run: |
+          npm start &
+          server_pid=$!
+          release_outbox_server() {
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+            if command -v fuser >/dev/null 2>&1; then
+              fuser -k 3000/tcp 2>/dev/null || true
+            fi
+            for _ in $(seq 1 15); do
+              if ! curl -sf http://127.0.0.1:3000/ > /dev/null 2>&1; then
+                return 0
+              fi
+              sleep 1
+            done
+            echo "Port 3000 still in use after recovery outbox probe."
+            exit 1
+          }
+          trap release_outbox_server EXIT
+          ready=0
+          for _ in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:3000/ > /dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "Application did not become ready for recovery outbox probe."
+            exit 1
+          fi
+          bash .github/scripts/run-recovery-outbox-integration.sh
+          release_outbox_server
+          trap - EXIT
+        env:
+          CI: 'true'
+          INTEGRATION_BASE_URL: http://127.0.0.1:3000
+          APP_URL: http://127.0.0.1:3000
+          PORT: '3000'
+          EMAIL_DELIVERY_MODE: staging_outbox
+          APP_SENT_RECOVERY_ENABLED: 'true'
+      - name: Backend browser integration tests
+        if: steps.classify.outputs.backend-mode != 'skip'
+        run: npm run test:e2e:backend
+        env:
+          E2E_BACKEND: '1'
+          CI: 'true'
+          APP_URL: http://localhost:3000
+          EMAIL_DELIVERY_MODE: staging_outbox
+          APP_SENT_RECOVERY_ENABLED: 'true'
+      - name: Map tile provider off (Playwright)
+        if: steps.classify.outputs.backend-mode != 'skip'
+        run: MAP_TILE_PROVIDER=off npm run test:e2e:backend -- tests/e2e/map-tile-fallback.spec.ts -g "off mode"
+        env:
+          E2E_BACKEND: '1'
+          CI: 'true'
+          APP_URL: http://localhost:3000
+      - name: Stop local backend
+        if: always() && steps.classify.outputs.backend-mode != 'skip'
+        run: npx --no-install supabase stop

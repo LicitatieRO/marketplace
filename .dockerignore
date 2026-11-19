@@ -1,0 +1,14 @@
+.git
+.github
+node_modules
+.next
+.env*
+!.env.example
+playwright-report
+test-results
+coverage
+.superpowers
+supabase/.temp
+supabase/.branches
+.local-stack.json
+dev/lightweight/.runtime

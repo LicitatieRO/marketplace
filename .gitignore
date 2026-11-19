@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+.env*
+!.env.example
+*.tsbuildinfo
+playwright-report/
+test-results/
+coverage/
+.superpowers/
+.vercel/
+supabase/.temp/
+supabase/.branches/
+.local-stack.json
+dev/lightweight/.runtime/
+
+.next

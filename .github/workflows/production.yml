@@ -1,0 +1,56 @@
+name: Release production
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Full 40-character SHA on main with successful completed CI
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - name: Validate requested commit before checkout
+        env:
+          RELEASE_SHA: ${{ inputs.commit_sha }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if [[ ! "$RELEASE_SHA" =~ ^[a-f0-9]{40}$ ]]; then
+            echo 'A full lowercase 40-character SHA is required.' >&2
+            exit 1
+          fi
+          status=$(gh api "repos/$GH_REPO/compare/$RELEASE_SHA...main" --jq .status)
+          [[ "$status" == ahead || "$status" == identical ]] || { echo 'Commit must be reachable from main.' >&2; exit 1; }
+          gh api "repos/$GH_REPO/actions/workflows/ci.yml/runs?head_sha=$RELEASE_SHA&event=push&per_page=100" --jq '.workflow_runs' > /tmp/release-ci.json
+          node -e 'const fs=require("node:fs");const runs=JSON.parse(fs.readFileSync("/tmp/release-ci.json","utf8"));if(!runs.some(r=>r.head_sha===process.env.RELEASE_SHA&&r.status==="completed"&&r.conclusion==="success"&&r.head_branch==="main"&&r.event==="push"))process.exit(1);'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.commit_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26'
+          cache: npm
+      - run: npm ci
+      - name: Verify tested commit, scoped configuration, migrate and deploy
+        run: node scripts/deploy.mjs
+        env:
+          DEPLOY_SHA: ${{ inputs.commit_sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DEPLOY_ORIGIN: ${{ vars.DEPLOY_ORIGIN }}

@@ -1,0 +1,43 @@
+BEGIN;
+SET search_path=public,extensions;
+SELECT no_plan();
+INSERT INTO auth.users(id,email,email_confirmed_at) VALUES
+ ('dddddddd-0000-4000-8000-000000000001','sealed-owner@test.local',now()),
+ ('dddddddd-0000-4000-8000-000000000002','invited@test.local',now()),
+ ('dddddddd-0000-4000-8000-000000000003','stranger@test.local',now());
+SELECT set_config('request.jwt.claims','{"sub":"dddddddd-0000-4000-8000-000000000001"}',true);
+CREATE TEMP TABLE f AS SELECT public.create_property('Sealed apartment','Description','Floreasca','Secret address','apartment',60,2,1,2020,9000000,40000,'{}') j;
+CREATE TEMP TABLE a AS SELECT public.start_auction((SELECT id FROM app.listings WHERE property_id=(SELECT (j->>'id')::uuid FROM f) AND transaction_type='rent'),'sealed','invite',now()-interval '1 second',now()+interval '1 hour',NULL,100) j;
+SELECT lives_ok(format('SELECT public.invite_bidder(%L,''invited@test.local'')',(SELECT j->>'id' FROM a)),'owner invites verified user');
+SELECT set_config('request.jwt.claims','{"sub":"dddddddd-0000-4000-8000-000000000003"}',true);
+SELECT throws_ok(format('SELECT public.place_bid(%L,50000,gen_random_uuid())',(SELECT j->>'id' FROM a)),'P0001','Invitation required','invite eligibility enforced');
+SELECT set_config('request.jwt.claims','{"sub":"dddddddd-0000-4000-8000-000000000002"}',true);
+CREATE TEMP TABLE b AS SELECT public.place_bid((SELECT (j->>'id')::uuid FROM a),50000,gen_random_uuid()) j;
+SELECT is(jsonb_array_length(public.get_workspace()->'bids'),1,'bidder sees own sealed bid');
+SELECT is(public.get_listing((SELECT id FROM app.listings WHERE auction_id=(SELECT (j->>'id')::uuid FROM a)))->'current_bid_minor','null'::jsonb,'sealed amount absent from catalogue');
+SELECT is((SELECT jsonb_array_length(public.get_workspace()->'bids')),1,'own sealed bid remains visible');
+SELECT lives_ok(format('SELECT public.set_favorite(%L,true)',(SELECT id FROM app.listings WHERE auction_id=(SELECT (j->>'id')::uuid FROM a))),'save favorite');
+SELECT is(jsonb_array_length(public.get_workspace()->'favorites'),1,'workspace favorite IDs');
+SELECT lives_ok(format('SELECT public.send_message(%L,''Hello'',NULL)',(SELECT id FROM app.listings WHERE auction_id=(SELECT (j->>'id')::uuid FROM a))),'buyer inquiry opens conversation');
+SELECT lives_ok(format('SELECT public.request_viewing(%L,now()+interval ''1 day'',''Visit please'')',(SELECT id FROM app.listings WHERE auction_id=(SELECT (j->>'id')::uuid FROM a))),'request viewing');
+SELECT set_config('request.jwt.claims','{"sub":"dddddddd-0000-4000-8000-000000000003"}',true);
+SELECT is(jsonb_array_length(public.get_workspace()->'messages'),0,'unrelated messages hidden');
+SELECT is(jsonb_array_length(public.get_workspace()->'viewings'),0,'unrelated viewings hidden');
+SELECT set_config('request.jwt.claims','{"sub":"dddddddd-0000-4000-8000-000000000001"}',true);
+SELECT is(jsonb_array_length(public.get_workspace()->'bids'),1,'owner sees sealed bids');
+UPDATE app.auctions SET ends_at=clock_timestamp()-interval '1 second' WHERE id=(SELECT (j->>'id')::uuid FROM a);
+CREATE TEMP TABLE r AS SELECT public.request_reservation((SELECT (j->>'id')::uuid FROM b),10000,gen_random_uuid()) j;
+SELECT set_config('request.jwt.claims','{"sub":"dddddddd-0000-4000-8000-000000000002"}',true);
+SELECT lives_ok(format('SELECT public.advance_reservation(%L,''fund'',gen_random_uuid())',(SELECT j->>'id' FROM r)),'simulated deposit funded');
+SELECT is(public.advance_reservation((SELECT (j->>'id')::uuid FROM r),'cancel',gen_random_uuid())->>'deposit_status','refunded','cancellation refunds full simulated deposit');
+SELECT set_config('request.jwt.claims','{"sub":"dddddddd-0000-4000-8000-000000000001"}',true);
+CREATE TEMP TABLE r2 AS SELECT public.request_reservation((SELECT (j->>'id')::uuid FROM b),10000,gen_random_uuid()) j;
+SELECT set_config('request.jwt.claims','{"sub":"dddddddd-0000-4000-8000-000000000002"}',true);
+SELECT public.advance_reservation((SELECT (j->>'id')::uuid FROM r2),'fund',gen_random_uuid());
+SELECT public.advance_reservation((SELECT (j->>'id')::uuid FROM r2),'sign',gen_random_uuid());
+SELECT set_config('request.jwt.claims','{"sub":"dddddddd-0000-4000-8000-000000000001"}',true);
+SELECT public.advance_reservation((SELECT (j->>'id')::uuid FROM r2),'sign',gen_random_uuid());
+SELECT is((SELECT tenancy_status FROM app.properties WHERE id=(SELECT (j->>'id')::uuid FROM f)),'occupied','rental signing discloses occupancy');
+SELECT lives_ok(format('SELECT public.start_auction(%L,''ascending'',''public'',now(),now()+interval ''1 hour'',1000,100)',(SELECT id FROM app.listings WHERE property_id=(SELECT (j->>'id')::uuid FROM f) AND transaction_type='sale')),'rented property allows investment sale');
+SELECT * FROM finish();
+ROLLBACK;

@@ -46,5 +46,11 @@ test.describe("social login (coming soon) and data deletion legal page", () => {
         name: "Data deletion instructions (Meta requirement)",
       }),
     ).toBeVisible();
+    await expect(
+      page.getByText(
+        "If you submitted an illegal-content report using your name or email address",
+      ),
+    ).toBeVisible();
+    await expect(page.getByText("promotions or reports")).toHaveCount(0);
   });
 });

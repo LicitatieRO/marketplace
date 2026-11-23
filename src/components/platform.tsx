@@ -263,7 +263,7 @@ export function PlatformProvider({
       </header>
       <PocSiteBanner />
       {!configured && (
-        <div className="demo-banner">
+        <div className="demo-banner demo-banner-config">
           <span className="status-dot" />
           {t(
             "Catalog demonstrativ — conectează Supabase pentru conturi și salvarea modificărilor.",

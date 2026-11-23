@@ -1,7 +1,10 @@
 "use client";
-import { useState } from "react";
-import { Users } from "lucide-react";
+
+import { useEffect, useId, useRef, useState } from "react";
+import { ChevronDown, Users } from "lucide-react";
 import { usePlatform } from "@/components/platform";
+import { demoSwitcherChipLabel } from "@/lib/i18n";
+
 const DEMO_PERSONA_KEY = "licitatiero-demo-persona";
 const DUAL_GUEST_VIEW_KEY = "licitatiero-dual-guest-view";
 export type PocPersona = "guest" | "owner" | "buyer" | "dual";
@@ -17,7 +20,21 @@ export function AccountSwitcher({
   const { t, configured, refreshSession, pocSwitcher } = usePlatform();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
   if (!pocSwitcher) return null;
+
   async function apply(persona: PocPersona) {
     setBusy(true);
     setError("");
@@ -74,42 +91,56 @@ export function AccountSwitcher({
   };
   return (
     <div
-      className="demo-banner"
+      ref={rootRef}
+      className="demo-switcher-fab"
       data-testid="poc-account-switcher"
-      style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <button
+        type="button"
+        className="demo-switcher-fab-trigger button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((v) => !v)}
+      >
         <Users size={14} aria-hidden />
-        <strong>
-          {t(
-            "Comutator cont POC (doar staging)",
-            "POC account switcher (staging only)",
-          )}
-        </strong>
-      </div>
-      <p className="muted small" style={{ margin: 0 }}>
-        {t(
-          "Instrument de demonstrație. Nu este disponibil în producție.",
-          "Demo tool. Not available in production.",
-        )}
-      </p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {(Object.keys(labels) as PocPersona[]).map((persona) => (
-          <button
-            key={persona}
-            type="button"
-            className="button"
-            disabled={busy}
-            onClick={() => void apply(persona)}
-          >
-            {t(...labels[persona])}
-          </button>
-        ))}
-      </div>
-      {error ? (
-        <span className="muted small" role="alert">
-          {error}
-        </span>
+        {t(demoSwitcherChipLabel.ro, demoSwitcherChipLabel.en)}
+        <ChevronDown size={14} aria-hidden className={open ? "is-open" : ""} />
+      </button>
+      {open ? (
+        <div id={panelId} className="demo-switcher-fab-panel" role="region">
+          <p className="muted small" style={{ margin: "0 0 8px" }}>
+            <strong>
+              {t(
+                "Comutator cont POC (doar staging)",
+                "POC account switcher (staging only)",
+              )}
+            </strong>
+          </p>
+          <p className="muted small" style={{ margin: "0 0 10px" }}>
+            {t(
+              "Instrument de demonstrație. Nu este disponibil în producție.",
+              "Demo tool. Not available in production.",
+            )}
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {(Object.keys(labels) as PocPersona[]).map((persona) => (
+              <button
+                key={persona}
+                type="button"
+                className="button"
+                disabled={busy}
+                onClick={() => void apply(persona)}
+              >
+                {t(...labels[persona])}
+              </button>
+            ))}
+          </div>
+          {error ? (
+            <span className="muted small" role="alert">
+              {error}
+            </span>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

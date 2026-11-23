@@ -14,6 +14,20 @@ export const metadata: Metadata = {
   },
   description:
     "Prototip de demonstrație. Ofertele, rezervările și plățile sunt simulate. Fără bani reali, fără escrow, fără transfer de proprietate prin platformă.",
+  openGraph: {
+    title: "LicitatieRO — POC / Simulare · Locuințe în București",
+    description:
+      "Prototip de demonstrație. Ofertele, rezervările și plățile sunt simulate. Fără bani reali, fără escrow, fără transfer de proprietate prin platformă.",
+    type: "website",
+    locale: "ro_RO",
+    siteName: "LicitatieRO",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LicitatieRO — POC / Simulare · Locuințe în București",
+    description:
+      "Prototip de demonstrație. Licitații transparente pentru locuințe din București (POC / Simulare).",
+  },
   ...siteRootRobotsMetadata(),
 };
 export default async function RootLayout({

@@ -84,21 +84,10 @@ export function CookieConsentBanner() {
   if (dismissed) return null;
   return (
     <div
-      className="feedback notice"
+      className="feedback notice cookie-consent-sheet"
       role="dialog"
       aria-labelledby="cookie-consent-title"
       data-testid="cookie-consent-banner"
-      style={{
-        position: "fixed",
-        bottom: 16,
-        left: 16,
-        right: 16,
-        maxWidth: 720,
-        margin: "0 auto",
-        zIndex: 40,
-        padding: 16,
-        boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-      }}
     >
       <p id="cookie-consent-title" style={{ fontWeight: 600, marginBottom: 8 }}>
         {t(cookieBanner.titleRo, cookieBanner.titleEn)}

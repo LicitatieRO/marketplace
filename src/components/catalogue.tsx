@@ -18,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import type { Listing, TransactionType } from "@/lib/types";
-import { listingTitle } from "@/lib/i18n";
+import { heroMapCta, heroSubline, listingTitle } from "@/lib/i18n";
 import { money } from "@/lib/format";
 import { buildMapPathFromCatalogueFilters } from "@/lib/catalogue-map-path";
 import { Feedback, useMutation, usePlatform } from "./platform";
@@ -127,11 +127,14 @@ export function Catalogue({ listings }: { listings: Listing[] }) {
             {t("începe", "starts")} <em>{t("aici.", "here.")}</em>
           </h1>
           <p>
-            {t(
-              "Caută cu încredere. Alege în ritmul tău. Descoperă locuințe și oferte, direct de la proprietari.",
-              "Look with confidence. Choose at your own pace. Discover homes and offers, directly from owners.",
-            )}
+            {t(heroSubline.ro, heroSubline.en)}
           </p>
+          <div className="hero-cta-row">
+            <Link className="button primary hero-cta-map" href={catalogueMapPath}>
+              {t(heroMapCta.ro, heroMapCta.en)}
+              <ArrowUpRight size={15} aria-hidden />
+            </Link>
+          </div>
         </div>
         <div className="hero-aside">
           <div className="hero-note">

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Settings2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   parseCatalogueMapFilters,
@@ -41,6 +42,12 @@ import {
 } from "@/lib/optional-content";
 import { notifyOptionalContentChanged } from "@/lib/optional-content-events";
 import { useAllowsOptionalContent } from "@/components/disclosures/cookie-consent-banner";
+import {
+  mapFilterChipRent,
+  mapSearchOnMoveLabel,
+  mapToolbarSettingsChip,
+} from "@/lib/i18n";
+import { buildMapFilterChips } from "@/lib/map-filter-chips";
 import { Feedback, useMutation, usePlatform } from "@/components/platform";
 import { ListingsMapCanvas } from "./listings-map-canvas";
 
@@ -75,6 +82,7 @@ export function ListingsMapPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [searchOnMove, setSearchOnMove] = useState(true);
+  const [mapSettingsOpen, setMapSettingsOpen] = useState(false);
   const [bbox, setBbox] = useState<MapBbox>(DEFAULT_BBOX);
   const [confirmAmount, setConfirmAmount] = useState<number | null>(null);
   const [bidMinor, setBidMinor] = useState<number | null>(null);
@@ -117,6 +125,21 @@ export function ListingsMapPage() {
         filterMeta,
       ),
     [listings, catalogueFilters, filterMeta],
+  );
+
+  const filterChips = useMemo(
+    () =>
+      buildMapFilterChips(catalogueFilters, {
+        rent: t(mapFilterChipRent.ro, mapFilterChipRent.en),
+        rooms: (n) =>
+          t(`${n} camere`, `${n} rooms`),
+        maxPrice: (n) =>
+          t(`Până la €${n}`, `Up to €${n}`),
+        neighborhood: (n) => n,
+        query: (q) => `“${q}”`,
+        propertyType: (type) => type,
+      }),
+    [catalogueFilters, t],
   );
 
   const selected = visibleListings.find((l) => l.id === selectedId) ?? null;
@@ -568,23 +591,54 @@ export function ListingsMapPage() {
         {t("Sari la listă", "Skip to list")}
       </a>
       <header className="listings-map-toolbar">
-        <h1>{t("Hartă licitații", "Auction map")}</h1>
-        <label className="small">
-          <input
-            type="checkbox"
-            checked={searchOnMove}
-            onChange={(e) => setSearchOnMove(e.target.checked)}
-          />{" "}
-          {t("Caută când muți harta", "Search as I move the map")}
-        </label>
-        {!searchOnMove ? (
+        <div className="listings-map-toolbar-head">
+          <h1>{t("Hartă licitații", "Auction map")}</h1>
           <button
             type="button"
-            className="button"
-            onClick={() => void fetchListings(bbox)}
+            className="button listings-map-settings-chip"
+            data-testid="listings-map-settings-chip"
+            aria-expanded={mapSettingsOpen}
+            onClick={() => setMapSettingsOpen((open) => !open)}
           >
-            {t("Caută în această zonă", "Search this area")}
+            <Settings2 size={14} aria-hidden />
+            {t(mapToolbarSettingsChip.ro, mapToolbarSettingsChip.en)}
           </button>
+        </div>
+        {filterChips.length > 0 ? (
+          <div
+            className="listings-map-filter-chips"
+            aria-label={t("Filtre active", "Active filters")}
+          >
+            {filterChips.map((chip) => (
+              <span key={chip.id} className="chip listings-map-filter-chip">
+                {chip.label}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        {mapSettingsOpen ? (
+          <div
+            className="listings-map-settings-panel"
+            data-testid="listings-map-settings-panel"
+          >
+            <label className="small listings-map-search-on-move">
+              <input
+                type="checkbox"
+                checked={searchOnMove}
+                onChange={(e) => setSearchOnMove(e.target.checked)}
+              />{" "}
+              {t(mapSearchOnMoveLabel.ro, mapSearchOnMoveLabel.en)}
+            </label>
+            {!searchOnMove ? (
+              <button
+                type="button"
+                className="button"
+                onClick={() => void fetchListings(bbox)}
+              >
+                {t("Caută în această zonă", "Search this area")}
+              </button>
+            ) : null}
+          </div>
         ) : null}
         {loading ? <span aria-live="polite">{t("Se încarcă…", "Loading…")}</span> : null}
         {fetchError ? (

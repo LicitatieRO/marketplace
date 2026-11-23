@@ -265,7 +265,9 @@ test("buyer bids, messages, views, saves, and confirms a simulated reservation",
     .click();
   await expect(reservationCard).toContainText("Finanțată (simulare)");
   await reservationCard
-    .getByRole("button", { name: "Confirm că am semnat" })
+    .getByRole("button", {
+      name: "Confirm semnarea simulată — nu este arvună și nu transferă proprietatea",
+    })
     .click();
   await expect(
     reservationCard.getByRole("button", {

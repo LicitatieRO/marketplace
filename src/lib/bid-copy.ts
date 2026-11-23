@@ -5,7 +5,11 @@ import { translate } from "./i18n";
 export function bidGlossary(language: Language) {
   return {
     placeBid: translate(language, "Licitează", "Place bid"),
-    confirmBid: translate(language, "Confirm oferta", "Confirm bid"),
+    confirmBid: translate(
+      language,
+      "Confirmă oferta simulată",
+      "Confirm simulated bid",
+    ),
     cancel: translate(language, "Anulează", "Cancel"),
     signInToBid: translate(
       language,
@@ -84,8 +88,75 @@ export function bidConfirmPrompt(
 ) {
   return translate(
     language,
-    `Confirmi oferta de ${amountFormatted}? Pas minim: ${minIncrementFormatted}. Aceasta este o simulare (POC). Nu se transferă bani și nu se creează nicio obligație legală.`,
-    `Confirm your ${amountFormatted} bid? Minimum step: ${minIncrementFormatted}. This is a simulation (POC). No money moves and no legal obligation is created.`,
+    `Confirmi oferta simulată (POC) de ${amountFormatted}? Pas minim: ${minIncrementFormatted}. Oferta este neangajantă: nu se percep plăți sau garanții, nu se transferă bani și nu se încheie un contract.`,
+    `Confirm your simulated (POC) ${amountFormatted} bid? Minimum step: ${minIncrementFormatted}. This offer is non-binding: no payment or deposit is taken, no money moves, and no contract is formed.`,
+  );
+}
+
+export function legalConfirmSimulatedSigning(language: Language) {
+  return translate(
+    language,
+    "Confirm semnarea simulată — nu este arvună și nu transferă proprietatea",
+    "Confirm simulated signing — not earnest money and does not transfer title",
+  );
+}
+
+/** Workspace / reservation status labels with simulation qualifiers (#55). */
+export function workspaceStatusLabelPairs(): Record<string, [string, string]> {
+  return {
+    active: ["Activă", "Active"],
+    published: ["Publicat", "Published"],
+    open: ["Deschisă", "Open"],
+    scheduled: ["Programată", "Scheduled"],
+    closed: ["Închisă", "Closed"],
+    ended: ["Încheiată", "Ended"],
+    requested: ["Solicitată", "Requested"],
+    pending: ["În așteptare", "Pending"],
+    funded: ["Finanțată (simulare)", "Funded (simulation)"],
+    signed: [
+      "Semnare simulată (ambele părți)",
+      "Simulated signing (both parties)",
+    ],
+    cancelled: ["Anulată", "Cancelled"],
+    expired: ["Expirată", "Expired"],
+    refunded: ["Rambursată (simulare)", "Refunded (simulation)"],
+    confirmed: ["Confirmată", "Confirmed"],
+    completed: ["Finalizată (simulare)", "Completed (simulation)"],
+    reserved: ["Rezervare simulată", "Simulated reservation"],
+    rented: ["Marcată închiriată (simulare)", "Marked rented (simulation)"],
+    sold: ["Marcată vândută (simulare)", "Marked sold (simulation)"],
+  };
+}
+
+export function workspaceStatusLabel(
+  status: string,
+  language: Language,
+): string {
+  const pair = workspaceStatusLabelPairs()[status];
+  return pair ? translate(language, ...pair) : status;
+}
+
+export function legalMapPageTitle(language: Language) {
+  return translate(
+    language,
+    "Hartă licitații simulate (POC)",
+    "Simulated auction map (POC)",
+  );
+}
+
+export function legalMapScheduledAuctionFallback(language: Language) {
+  return translate(
+    language,
+    "Licitație simulată programată",
+    "Scheduled simulated auction",
+  );
+}
+
+export function legalSimulatedAuctionCreatedToast(language: Language) {
+  return translate(
+    language,
+    "Licitația simulată a fost creată.",
+    "Simulated auction created.",
   );
 }
 

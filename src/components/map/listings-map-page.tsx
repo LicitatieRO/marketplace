@@ -22,7 +22,11 @@ import {
   type MapBbox as QueryMapBbox,
 } from "@/lib/map-bounds-query";
 import type { MapListing } from "@/lib/map-listing-types";
-import { bidGlossary } from "@/lib/bid-copy";
+import {
+  bidGlossary,
+  legalMapPageTitle,
+  legalMapScheduledAuctionFallback,
+} from "@/lib/bid-copy";
 import { BidConfirmPanel } from "@/components/bid-confirm-panel";
 import { formatEurCompact } from "@/lib/format-eur-compact";
 import { dateTime, money } from "@/lib/format";
@@ -460,7 +464,7 @@ export function ListingsMapPage() {
                 `Începe pe ${dateTime(selected.startsAt, "ro")}`,
                 `Starts ${dateTime(selected.startsAt, "en")}`,
               )
-            : t("Licitație programată", "Scheduled auction")}
+            : legalMapScheduledAuctionFallback(language)}
         </p>
       ) : selected.status === "live" && configured ? (
         <div className="lr-map-bid-control">
@@ -554,7 +558,7 @@ export function ListingsMapPage() {
         {t("Sari la listă", "Skip to list")}
       </a>
       <header className="listings-map-toolbar">
-        <h1>{t("Hartă licitații", "Auction map")}</h1>
+        <h1>{legalMapPageTitle(language)}</h1>
         <label className="small">
           <input
             type="checkbox"

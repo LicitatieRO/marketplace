@@ -5,6 +5,7 @@ import {
   extractCheckoutMetadata,
   hostnameInMockProductionAllowlist,
   mockPaymentsAllowed,
+  paymentsBlockedResponse,
   paymentsCheckoutMode,
   paymentsUnavailableResponse,
   stripeLiveModeFlagBlocked,
@@ -63,6 +64,7 @@ describe('stripe key guard', () => {
     vi.stubEnv('NODE_ENV', 'development');
     expect(paymentsCheckoutMode(undefined)).toBe('unavailable');
     expect(paymentsUnavailableResponse()).toEqual({ error: 'payments_unavailable' });
+    expect(paymentsBlockedResponse()).toEqual({ error: 'payments_blocked' });
   });
 
   it('returns mock only when explicitly enabled outside production', () => {

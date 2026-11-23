@@ -1,9 +1,10 @@
+# Staging (licitatiero-staging) is deployed out-of-band via the Vercel API at the full
+# main SHA, with migrations and smoke run handled by the DB & Reliability operator.
+# This workflow is retained for optional manual use once the GitHub staging environment
+# secrets and variables are configured.
 name: Deploy staging
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
+  workflow_dispatch:
 permissions:
   contents: read
   actions: read
@@ -12,14 +13,14 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: staging
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -29,7 +30,7 @@ jobs:
       - name: Verify tested commit, scoped configuration, migrate and deploy
         run: node scripts/deploy.mjs
         env:
-          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+          DEPLOY_SHA: ${{ github.sha }}
           GITHUB_TOKEN: ${{ github.token }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}

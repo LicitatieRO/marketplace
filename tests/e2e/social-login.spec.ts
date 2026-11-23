@@ -46,5 +46,21 @@ test.describe("social login (coming soon) and data deletion legal page", () => {
         name: "Data deletion instructions (Meta requirement)",
       }),
     ).toBeVisible();
+    await expect(
+      page.getByText(
+        "Notifications you received and auction invitations you never acted on are also deleted with your account.",
+      ),
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "If you sent auction invitations or placed bids, automatic deletion may be blocked",
+      ),
+    ).toBeVisible();
+    await expect(page.getByText("favourites, notifications or promotions")).toHaveCount(0);
+    await expect(
+      page.getByText(
+        "In-app deletion is available if your account has no recorded activity (for example listings, auctions, bids, reservations, messages, viewing requests, favourites or promotions).",
+      ),
+    ).toBeVisible();
   });
 });

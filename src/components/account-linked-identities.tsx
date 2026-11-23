@@ -4,11 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Link2, Trash2 } from "lucide-react";
 import { Feedback, usePlatform } from "@/components/platform";
+import { localizedMessage } from "@/lib/i18n";
 import type { LinkedIdentity } from "@/lib/auth-oauth";
 
 export function AccountLinkedIdentities() {
   const router = useRouter();
-  const { t, viewer } = usePlatform();
+  const { t, viewer, language } = usePlatform();
   const [identities, setIdentities] = useState<LinkedIdentity[]>([]);
   const [canUnlink, setCanUnlink] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -66,7 +67,7 @@ export function AccountLinkedIdentities() {
     } catch (err) {
       setError(
         err instanceof Error
-          ? err.message
+          ? localizedMessage(err.message, language)
           : t(
               "Nu am putut elimina metoda.",
               "Could not remove this sign-in method.",
@@ -96,7 +97,7 @@ export function AccountLinkedIdentities() {
     } catch (err) {
       setError(
         err instanceof Error
-          ? err.message
+          ? localizedMessage(err.message, language)
           : t("Nu am putut șterge contul.", "Could not delete the account."),
       );
     } finally {

@@ -6,8 +6,33 @@ INSERT INTO auth.users(id,email,email_confirmed_at) VALUES
  ('68686868-0000-4000-8000-000000000002','dsa-staff@example.test',now());
 UPDATE app.profiles SET is_staff=true WHERE id='68686868-0000-4000-8000-000000000002';
 SELECT set_config('request.jwt.claims','{"sub":"68686868-0000-4000-8000-000000000001","role":"authenticated"}',true);
-CREATE TEMP TABLE dsa_listing AS SELECT id FROM app.listings LIMIT 1;
-SELECT set_config('test.dsa_listing',(SELECT id::text FROM dsa_listing),true);
+INSERT INTO app.properties(
+ id,owner_id,title,description,neighborhood,exact_address,property_type,area_sqm,rooms,floor,built_year,judet
+) VALUES (
+ '68686868-0000-4000-8000-00000000f001',
+ '68686868-0000-4000-8000-000000000001',
+ 'DSA notice fixture property',
+ 'Deterministic property for DSA notice pgTAP coverage.',
+ 'Cotroceni',
+ '1 DSA Fixture Street',
+ 'apartment',
+ 50,
+ 2,
+ 3,
+ 1990,
+ 'București'
+) ON CONFLICT (id) DO NOTHING;
+INSERT INTO app.listings(
+ id,property_id,owner_id,transaction_type,price_minor,status
+) VALUES (
+ '68686868-0000-4000-8000-00000000f002',
+ '68686868-0000-4000-8000-00000000f001',
+ '68686868-0000-4000-8000-000000000001',
+ 'sale',
+ 20000000,
+ 'published'
+) ON CONFLICT (id) DO NOTHING;
+SELECT set_config('test.dsa_listing','68686868-0000-4000-8000-00000000f002',true);
 SET ROLE service_role;
 SELECT set_config('test.dsa_notice',(
  (public.submit_dsa_notice(

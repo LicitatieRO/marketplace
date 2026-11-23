@@ -5,7 +5,10 @@ import { isAccountDeleteConfirmationValid } from "@/lib/account-delete-confirmat
 import {
   accountDeleteBlockReason,
   ACCOUNT_DELETE_BLOCKED_MESSAGE,
+  ACCOUNT_DELETE_HAS_HISTORY_MESSAGE,
+  ACCOUNT_DELETE_NOT_FOUND_MESSAGE,
   ACCOUNT_DELETE_STAFF_MESSAGE,
+  ACCOUNT_DELETE_VIEWER_UNAVAILABLE_MESSAGE,
 } from "@/lib/server/account-delete-eligibility";
 import { getViewer, requireSignedInUser } from "@/lib/server/auth";
 import { failure, json, readJson } from "@/lib/server/http";
@@ -37,7 +40,10 @@ export async function POST(request: Request) {
     if (limited) return limited;
 
     const viewer = await getViewer();
-    if (viewer?.is_staff) {
+    if (!viewer) {
+      throw new RequestError(ACCOUNT_DELETE_VIEWER_UNAVAILABLE_MESSAGE, 403);
+    }
+    if (viewer.is_staff) {
       throw new RequestError(ACCOUNT_DELETE_STAFF_MESSAGE, 403);
     }
 
@@ -48,10 +54,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const blockReason = await accountDeleteBlockReason(
-      user.id,
-      user.email || "",
-    );
+    const blockReason = await accountDeleteBlockReason(user.id);
+    if (blockReason === "not_found") {
+      throw new RequestError(ACCOUNT_DELETE_NOT_FOUND_MESSAGE, 404);
+    }
+    if (blockReason === "staff") {
+      throw new RequestError(ACCOUNT_DELETE_STAFF_MESSAGE, 403);
+    }
+    if (blockReason === "has_history") {
+      // TODO(privacy-queue): enqueue founder review when table ships (#54 / #73).
+      throw new RequestError(ACCOUNT_DELETE_HAS_HISTORY_MESSAGE, 409);
+    }
     if (blockReason) {
       throw new RequestError(ACCOUNT_DELETE_BLOCKED_MESSAGE, 409);
     }
@@ -65,8 +78,24 @@ export async function POST(request: Request) {
         503,
       );
     }
+    // Release and deleteUser are not atomic; if delete fails, invite-only rows stay
+    // released. That is acceptable because the auction owner can invite again.
+    const { error: releaseError } = await admin.rpc(
+      "account_delete_release_invites",
+      { p_user_id: user.id },
+    );
+    if (releaseError) {
+      throw new RequestError("Could not delete the account.", 503);
+    }
     const { error } = await admin.auth.admin.deleteUser(user.id);
     if (error) {
+      const message = error.message ?? "";
+      const fkBlocked =
+        error.code === "23503" ||
+        /foreign key|violates foreign key/i.test(message);
+      if (fkBlocked) {
+        throw new RequestError(ACCOUNT_DELETE_HAS_HISTORY_MESSAGE, 409);
+      }
       throw new RequestError("Could not delete the account.", 503);
     }
     await db.auth.signOut({ scope: "global" });

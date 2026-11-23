@@ -7,6 +7,7 @@ import { paymentsServiceClient } from '@/lib/server/payments-db';
 import { getStripeClient } from '@/lib/server/stripe';
 import {
   assertStripeKeysNotLive,
+  paymentsBlockedResponse,
   paymentsCheckoutMode,
   paymentsUnavailableResponse,
 } from '@/lib/payments/stripe-guard';
@@ -29,15 +30,11 @@ export async function POST(request: Request) {
     assertStripeKeysNotLive();
     const checkoutMode = paymentsCheckoutMode(request.headers.get('host') ?? '');
     if (checkoutMode === 'blocked') {
-      return json(
-        {
-          error:
-            'In this POC, promotion and payment flows are available only in Stripe Test Mode. The current environment is not a test environment. The operation was blocked; no payment was taken.',
-        },
-        503,
-      );
+      console.warn('promo checkout blocked: stripe configuration is not allowed in POC test mode');
+      return json(paymentsBlockedResponse(), 503);
     }
     if (checkoutMode === 'unavailable') {
+      console.info('promo checkout unavailable: stripe test keys or PAYMENTS_MOCK_ENABLED required');
       return json(paymentsUnavailableResponse(), 503);
     }
     const { db, user } = await requireUser();

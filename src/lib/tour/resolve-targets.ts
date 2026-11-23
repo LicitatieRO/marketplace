@@ -1,11 +1,12 @@
 import { OPTIONAL_CONTENT_STORAGE_KEY } from "@/lib/optional-content";
+import { safeLocalStorageGetItem } from "@/lib/safe-browser-storage";
 import { TOUR_HEADER_MENU_MIN_WIDTH, TOUR_MOBILE_MAX_WIDTH } from "./constants";
 import type { TourStepDefinition } from "./types";
 import { selectorForTourTarget } from "./wait-for-target";
 
 function mapTilesAllowed(): boolean {
   if (typeof window === "undefined") return false;
-  const stored = localStorage.getItem(OPTIONAL_CONTENT_STORAGE_KEY);
+  const stored = safeLocalStorageGetItem(OPTIONAL_CONTENT_STORAGE_KEY);
   return stored === "accepted";
 }
 

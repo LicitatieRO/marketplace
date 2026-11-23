@@ -31,6 +31,25 @@ test.describe("buyer product tour", () => {
     expect(stored).toContain('"resume"');
   });
 
+  test("Enter on skip ends tour; Tab stays inside dialog", async ({ page }) => {
+    await page.goto("/?tour=1");
+    const dialog = page.getByTestId("tour-dialog");
+    await expect(dialog).toBeVisible();
+    await page.getByTestId("tour-skip").focus();
+    await page.keyboard.press("Enter");
+    await expect(dialog).toHaveCount(0);
+
+    await page.goto("/?tour=1");
+    await expect(dialog).toBeVisible();
+    await page.getByTestId("tour-next").focus();
+    await page.keyboard.press("Tab");
+    const trapped = await page.evaluate(() => {
+      const root = document.querySelector('[data-testid="tour-dialog"]');
+      return Boolean(root?.contains(document.activeElement));
+    });
+    expect(trapped).toBe(true);
+  });
+
   test("mobile 375px uses bottom sheet", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/?tour=buyer");

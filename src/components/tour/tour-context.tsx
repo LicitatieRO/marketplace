@@ -38,6 +38,10 @@ import {
   setTourResume,
 } from "@/lib/tour/storage";
 import type { TourKind, TourStepDefinition, TourStepPlacement } from "@/lib/tour/types";
+import {
+  handleTourDialogTabKey,
+  shouldTourEnterAdvanceNext,
+} from "@/lib/tour/focus-trap";
 import { selectorForTourTarget, waitForTarget } from "@/lib/tour/wait-for-target";
 
 type SpotlightRect = {
@@ -165,6 +169,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const [reducedMotion, setReducedMotion] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const navKeyRef = useRef<string | null>(null);
@@ -387,8 +392,13 @@ export function TourProvider({ children }: { children: ReactNode }) {
 
   useLayoutEffect(() => {
     if (!running) return;
-    titleRef.current?.focus();
-  }, [running, state.stepIndex, targetRect, state.targetMissing]);
+    const next = nextRef.current;
+    if (next && !next.disabled) {
+      next.focus();
+      return;
+    }
+    dialogRef.current?.focus();
+  }, [running, state.stepIndex, targetRect, state.targetMissing, waiting]);
 
   const onPrimary = useCallback(() => {
     if (!step) return;
@@ -406,6 +416,10 @@ export function TourProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!running) return;
     const onKeyDown = (event: KeyboardEvent) => {
+      const dialog = dialogRef.current;
+      if (dialog && event.target instanceof Node && dialog.contains(event.target)) {
+        handleTourDialogTabKey(event, dialog);
+      }
       const tag = (event.target as HTMLElement).tagName;
       if (
         tag === "INPUT" ||
@@ -419,7 +433,14 @@ export function TourProvider({ children }: { children: ReactNode }) {
         endTour();
         return;
       }
-      if (event.key === "ArrowRight" || event.key === "Enter") {
+      if (event.key === "Enter") {
+        if (shouldTourEnterAdvanceNext(event, dialog)) {
+          event.preventDefault();
+          onPrimary();
+        }
+        return;
+      }
+      if (event.key === "ArrowRight") {
         event.preventDefault();
         onPrimary();
         return;
@@ -580,6 +601,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
                 centeredMissing ||
                 Boolean(step.advanceRoute)) && (
                 <button
+                  ref={nextRef}
                   type="button"
                   className="button primary"
                   data-testid="tour-next"

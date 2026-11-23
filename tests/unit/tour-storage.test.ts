@@ -11,7 +11,7 @@ import {
 describe("tour storage v1", () => {
   const bag: Record<string, string> = {};
   beforeEach(() => {
-    vi.stubGlobal("localStorage", {
+    const store = {
       getItem: (key: string) => bag[key] ?? null,
       setItem: (key: string, value: string) => {
         bag[key] = value;
@@ -22,7 +22,9 @@ describe("tour storage v1", () => {
       clear: () => {
         for (const key of Object.keys(bag)) delete bag[key];
       },
-    });
+    };
+    vi.stubGlobal("localStorage", store);
+    vi.stubGlobal("window", { localStorage: store, sessionStorage: store });
   });
 
   afterEach(() => {

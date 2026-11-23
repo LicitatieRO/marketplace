@@ -1,3 +1,7 @@
+import {
+  safeLocalStorageGetItem,
+  safeLocalStorageSetItem,
+} from "@/lib/safe-browser-storage";
 import type { TourKind } from "./types";
 
 export const TOUR_STORAGE_KEY = "licitatiero-tour";
@@ -22,16 +26,9 @@ export const emptyTourStorage = (): TourPersistedV1 => ({
   resume: null,
 });
 
-function tourLocalStorage(): Storage | null {
-  if (typeof globalThis.localStorage === "undefined") return null;
-  return globalThis.localStorage;
-}
-
 export function readTourStorage(): TourPersistedV1 {
-  const storage = tourLocalStorage();
-  if (!storage) return emptyTourStorage();
   try {
-    const raw = storage.getItem(TOUR_STORAGE_KEY);
+    const raw = safeLocalStorageGetItem(TOUR_STORAGE_KEY);
     if (!raw) return emptyTourStorage();
     const parsed = JSON.parse(raw) as Partial<TourPersistedV1>;
     if (parsed.v !== TOUR_STORAGE_VERSION) return emptyTourStorage();
@@ -54,7 +51,7 @@ export function readTourStorage(): TourPersistedV1 {
 }
 
 export function writeTourStorage(next: TourPersistedV1): void {
-  tourLocalStorage()?.setItem(TOUR_STORAGE_KEY, JSON.stringify(next));
+  safeLocalStorageSetItem(TOUR_STORAGE_KEY, JSON.stringify(next));
 }
 
 export function mergeTourStorage(

@@ -149,4 +149,9 @@ test("sale detail displays public offer and total asking price", async ({
   await expect(
     page.getByRole("heading", { name: "Hai să vorbim despre asta." }),
   ).toBeVisible();
+  await expect(
+    page.getByText("Tur virtual: nu a fost furnizat de proprietar.", {
+      exact: true,
+    }),
+  ).toBeVisible();
 });

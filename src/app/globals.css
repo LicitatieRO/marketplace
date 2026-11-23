@@ -4587,6 +4587,17 @@ input::-webkit-inner-spin-button {
   background: var(--surface);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 10%, transparent);
 }
+.cookie-consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cookie-consent-choice {
+  flex: 1 1 140px;
+  min-height: 44px;
+  text-align: center;
+  justify-content: center;
+}
 .cookie-consent-sheet {
   position: fixed;
   bottom: 0;

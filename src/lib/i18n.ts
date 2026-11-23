@@ -135,8 +135,8 @@ export const pocBannerCollapsedLine = {
 export const pocBannerExpandLabel = { ro: "Detalii", en: "Details" };
 export const pocBannerCollapseLabel = { ro: "Restrânge", en: "Collapse" };
 export const heroSubline = {
-  ro: "Licitații transparente pentru locuințe din București: cumperi sau închiriezi direct de la proprietar.",
-  en: "Transparent auctions for Bucharest homes: buy or rent directly from owners.",
+  ro: "Licitații simulate (POC) pentru locuințe din București: explorezi anunțuri demonstrative, fără cumpărare, închiriere sau plăți reale.",
+  en: "Simulated auctions (POC) for Bucharest homes: explore demonstration listings, with no real purchase, rental, or payment.",
 };
 export const heroMapCta = { ro: "Vezi harta", en: "See the map" };
 export const demoSwitcherChipLabel = { ro: "Demo", en: "Demo" };

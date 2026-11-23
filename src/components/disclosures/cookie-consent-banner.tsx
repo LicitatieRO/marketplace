@@ -111,6 +111,8 @@ export function CookieConsentBanner() {
   );
 }
 
+const cookieConsentChoiceClass = "button primary cookie-consent-choice";
+
 function CookieConsentActions({
   t,
   onNecessary,
@@ -121,11 +123,21 @@ function CookieConsentActions({
   onAccept: () => void;
 }) {
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-      <button type="button" className="button" onClick={onNecessary}>
+    <div className="cookie-consent-actions">
+      <button
+        type="button"
+        className={cookieConsentChoiceClass}
+        data-testid="cookie-consent-reject"
+        onClick={onNecessary}
+      >
         {t(cookieBanner.necessaryRo, cookieBanner.necessaryEn)}
       </button>
-      <button type="button" className="button primary" onClick={onAccept}>
+      <button
+        type="button"
+        className={cookieConsentChoiceClass}
+        data-testid="cookie-consent-accept"
+        onClick={onAccept}
+      >
         {t(cookieBanner.acceptRo, cookieBanner.acceptEn)}
       </button>
     </div>

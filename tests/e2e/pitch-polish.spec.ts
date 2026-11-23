@@ -18,6 +18,24 @@ test.describe("pitch polish chrome", () => {
     await expect(pocBanner).toHaveAttribute("role", "status");
   });
 
+  test("cookie consent reject and accept use the same button class", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto("/");
+    const banner = page.getByTestId("cookie-consent-banner");
+    await expect(banner).toBeVisible();
+    const reject = page.getByTestId("cookie-consent-reject");
+    const accept = page.getByTestId("cookie-consent-accept");
+    await expect(reject).toBeVisible();
+    await expect(accept).toBeVisible();
+    const rejectClass = await reject.getAttribute("class");
+    const acceptClass = await accept.getAttribute("class");
+    expect(rejectClass).toBeTruthy();
+    expect(rejectClass).toBe(acceptClass);
+    expect(rejectClass).toContain("primary");
+  });
+
   test("opengraph image returns image/png", async ({ request }) => {
     const response = await request.get("/opengraph-image");
     expect(response.status()).toBe(200);

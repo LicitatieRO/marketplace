@@ -4,6 +4,7 @@ import { authInput } from '@/lib/validation';
 import { getSupabase } from '@/lib/server/supabase';
 import { isConfigured } from '@/lib/config';
 import { failure,json,readJson } from '@/lib/server/http';
+import { languageFromRequest } from '@/lib/server/public-validation';
 import { isStagingSignupLinkEnabled } from '@/lib/server/staging-signup-link';
 import {
   stagingExistingAccountOutboxNotice,
@@ -93,4 +94,4 @@ export async function POST(request:Request){try{
   throw new RequestError('Email or password is incorrect.',401);
  }
  return json({data:{message:'Signed in.'}});
-}catch(e){return failure(e);}}
+}catch(e){return failure(e,{language:languageFromRequest(request.headers)});}}

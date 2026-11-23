@@ -79,16 +79,13 @@ function resolveLocalServiceCredentials() {
   return { supabaseUrl: apiUrl, serviceKey: roleKey };
 }
 
-function requireRecoveryStack(t) {
+function requireRecoveryStack() {
   if (!assertRecoveryTemplateOrFailInCi()) return null;
   const creds = resolveLocalServiceCredentials();
   if (!creds || !process.env.E2E_PASSWORD) {
-    const message =
-      "Recovery callback integration requires local Supabase service credentials and E2E_PASSWORD";
-    if (process.env.CI) {
-      assert.fail(message);
-    }
-    t.skip(message);
+    failInCi(
+      "Recovery callback integration requires local Supabase service credentials and E2E_PASSWORD",
+    );
     return null;
   }
   return creds;
@@ -96,8 +93,8 @@ function requireRecoveryStack(t) {
 
 const testEmail = process.env.E2E_BUYER_EMAIL || "buyer@licitatiero.local";
 
-test("recovery callback works in a fresh browser context (no PKCE verifier cookie)", async (t) => {
-  const stack = requireRecoveryStack(t);
+test("recovery callback works in a fresh browser context (no PKCE verifier cookie)", async () => {
+  const stack = requireRecoveryStack();
   if (!stack) return;
 
   const admin = createClient(stack.supabaseUrl, stack.serviceKey, {

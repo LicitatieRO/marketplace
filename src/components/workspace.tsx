@@ -396,8 +396,8 @@ export function WorkspaceView({
                           <div className="row-meta">
                             <span>
                               {str(auction, "mode") === "sealed"
-                                ? t("Confidențială", "Confidential")
-                                : t("Ascendentă", "Ascending")}
+                                ? t("Confidențială (POC)", "Confidential (POC)")
+                                : t("Ascendentă (simulată)", "Ascending (simulated)")}
                             </span>
                             <span>
                               {str(auction, "access") === "invite"
@@ -1454,7 +1454,7 @@ function AuctionEditor({
       >
         <span>
           <Plus size={18} />
-          {t("Pornește o licitație", "Start an auction")}
+          {t("Pornește o licitație simulată", "Start a simulated auction")}
         </span>
         <ChevronDown size={18} className={expanded ? "rotate" : ""} />
       </button>
@@ -1490,14 +1490,14 @@ function AuctionEditor({
               >
                 <option value="ascending">
                   {t(
-                    "Ascendentă · oferte publice",
-                    "Ascending · public amounts",
+                    "Ascendentă (simulată) · oferte publice",
+                    "Ascending (simulated) · public amounts",
                   )}
                 </option>
                 <option value="sealed">
                   {t(
-                    "Confidențială · oferte sigilate",
-                    "Sealed · confidential amounts",
+                    "Confidențială (POC) · oferte sigilate",
+                    "Sealed (POC) · confidential amounts",
                   )}
                 </option>
               </select>
@@ -1561,7 +1561,7 @@ function AuctionEditor({
           <button className="button primary" disabled={mutation.busy}>
             {mutation.busy
               ? t("Se creează…", "Creating…")
-              : t("Creează licitația", "Create auction")}
+              : t("Creează licitația simulată", "Create simulated auction")}
             <ArrowUpRight size={16} />
           </button>
         </form>

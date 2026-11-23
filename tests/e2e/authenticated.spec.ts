@@ -197,12 +197,13 @@ test("buyer bids, messages, views, saves, and confirms a simulated reservation",
   await page.goto(`/listings/${listing.id}`);
   await page.getByLabel("Oferta ta în EUR").fill("100100");
   await page
-    .getByRole("button", { name: "Înregistrează oferta", exact: true })
+    .getByTestId("listing-place-bid")
     .click();
+  await page.getByTestId("listing-bid-confirm-confirm").click();
   await expect(
     page
       .locator(".feedback.success")
-      .filter({ hasText: "Oferta ta a fost înregistrată" }),
+      .filter({ hasText: "Oferta (simulare) a fost înregistrată" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Salvează", exact: true }).click();
   await expect(

@@ -8,10 +8,14 @@ export function sanitizeDemoListingForClient(listing: Listing): Listing {
   void _exactLng;
   const approxLat = typeof publicLat === "number" ? publicLat : undefined;
   const approxLng = typeof publicLng === "number" ? publicLng : undefined;
+  const withClock =
+    rest.auction_id && !rest.server_now
+      ? { ...rest, server_now: new Date().toISOString() }
+      : rest;
   if (approxLat === undefined || approxLng === undefined) {
-    return { ...rest };
+    return withClock;
   }
-  return { ...rest, publicLat: approxLat, publicLng: approxLng };
+  return { ...withClock, publicLat: approxLat, publicLng: approxLng };
 }
 
 export function sanitizeDemoListingsForClient(listings: Listing[]): Listing[] {

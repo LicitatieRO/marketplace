@@ -121,13 +121,11 @@ test.describe("auth/legal POC (configured backend)", () => {
     await expect(page.getByRole("heading", { name: "Următorul pas" })).toBeVisible({
       timeout: 10_000,
     });
-    await expect(
-      page.getByRole("button", { name: "Înregistrează oferta" }),
-    ).toHaveCount(0);
+    await expect(page.getByTestId("listing-place-bid")).toHaveCount(0);
     const listingPath = `/listings/${listingId}`;
     const participate = page
       .locator(".offer-panel")
-      .getByRole("link", { name: "Intră în cont pentru a participa" });
+      .getByRole("link", { name: "Intră în cont ca să licitezi" });
     await expect(participate).toBeVisible();
     await expect(participate).toHaveAttribute(
       "href",

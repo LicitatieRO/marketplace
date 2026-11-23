@@ -18,7 +18,9 @@ import {
   X,
 } from "lucide-react";
 import type { Listing, TransactionType } from "@/lib/types";
+import { legalCatalogueAuctionBadge } from "@/lib/bid-copy";
 import { listingTitle } from "@/lib/i18n";
+import { CatalogueCardAuctionMeta } from "./catalogue-card-auction-meta";
 import { money } from "@/lib/format";
 import { buildMapPathFromCatalogueFilters } from "@/lib/catalogue-map-path";
 import { Feedback, useMutation, usePlatform } from "./platform";
@@ -507,9 +509,7 @@ export function PropertyCard({
               className={`badge ${listing.auction_mode === "sealed" ? "badge-navy" : "badge-coral"}`}
             >
               <span className="status-dot" />
-              {listing.auction_mode === "sealed"
-                ? t("Ofertă confidențială", "Confidential offer")
-                : t("Licitație deschisă", "Open bidding")}
+              {legalCatalogueAuctionBadge(listing.auction_mode, language)}
             </span>
           )}
           {listing.tenancy_status === "occupied" && (
@@ -544,6 +544,7 @@ export function PropertyCard({
             {listingTitle(listing, language)}
           </Link>
         </h3>
+        <CatalogueCardAuctionMeta listing={listing} />
         <div className="property-specs">
           <span>
             <BedDouble size={15} />

@@ -22,6 +22,8 @@ import {
   type MapBbox as QueryMapBbox,
 } from "@/lib/map-bounds-query";
 import type { MapListing } from "@/lib/map-listing-types";
+import { bidGlossary } from "@/lib/bid-copy";
+import { BidConfirmPanel } from "@/components/bid-confirm-panel";
 import { formatEurCompact } from "@/lib/format-eur-compact";
 import { dateTime, money } from "@/lib/format";
 import { ROMANIA_BBOX } from "@/lib/geo-bounds";
@@ -67,6 +69,7 @@ function focusableCardNodes(container: HTMLElement): HTMLElement[] {
 
 export function ListingsMapPage() {
   const { t, language, viewer, configured } = usePlatform();
+  const bidTerms = bidGlossary(language);
   const globalAllows = useAllowsOptionalContent();
   const [localAccepted, setLocalAccepted] = useState(false);
   const allowsTiles = globalAllows || localAccepted;
@@ -367,7 +370,7 @@ export function ListingsMapPage() {
         p_auction_id: selected.auctionId,
         p_amount_minor: bidMinor,
       },
-      t("Oferta a fost înregistrată (simulare).", "Bid recorded (simulation)."),
+      bidTerms.bidRecordedSimulation,
     );
     setConfirmAmount(null);
     if (ok) void fetchListings(bbox);
@@ -439,7 +442,7 @@ export function ListingsMapPage() {
             data-testid="map-guest-bid-login"
             href={`/login?next=${encodeURIComponent(`/map?listing=${selected.id}&intent=bid`)}`}
           >
-            {t("Autentifică-te pentru a licita", "Sign in to bid")}
+            {bidTerms.signInToBid}
           </Link>
         ) : null
       ) : selected.isOwn ? (
@@ -475,7 +478,7 @@ export function ListingsMapPage() {
             </p>
           ) : null}
           <label className="small" htmlFor="map-bid-amount">
-            {t("Sumă ofertă (EUR)", "Bid amount (EUR)")}
+            {bidTerms.bidAmountLabel}
           </label>
           <input
             id="map-bid-amount"
@@ -495,7 +498,7 @@ export function ListingsMapPage() {
             disabled={bidMinor === null || bidMinor < minimumBid}
             onClick={() => setConfirmAmount(bidMinor)}
           >
-            {t("Licitează", "Place bid")}
+            {bidTerms.placeBid}
           </button>
         </div>
       ) : null}
@@ -505,33 +508,16 @@ export function ListingsMapPage() {
         </Link>
       ) : null}
       {confirmAmount !== null ? (
-        <div className="lr-map-confirm panel-inset" data-testid="map-bid-confirm-panel">
-          <p>
-            {t(
-              `Confirmi oferta de ${money(confirmAmount, language)}? Aceasta este o simulare (POC). Nu se transferă bani și nu se creează nicio obligație legală.`,
-              `Confirm your ${money(confirmAmount, language)} bid? This is a simulation (POC). No money moves and no legal obligation is created.`,
-            )}
-          </p>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              ref={confirmPrimaryRef}
-              type="button"
-              className="button primary"
-              data-testid="map-bid-confirm"
-              disabled={mutation.busy}
-              onClick={() => void submitBid()}
-            >
-              {t("Confirm oferta", "Confirm bid")}
-            </button>
-            <button
-              type="button"
-              className="button"
-              onClick={() => setConfirmAmount(null)}
-            >
-              {t("Anulează", "Cancel")}
-            </button>
-          </div>
-        </div>
+        <BidConfirmPanel
+          language={language}
+          amountMinor={confirmAmount}
+          minIncrementMinor={selected.minIncrementCents}
+          busy={mutation.busy}
+          testId="map-bid-confirm-panel"
+          confirmButtonRef={confirmPrimaryRef}
+          onCancel={() => setConfirmAmount(null)}
+          onConfirm={() => void submitBid()}
+        />
       ) : null}
       <Link href={listingPath(selected.slug)} className="button">
         {t("Vezi proprietatea →", "View property →")}

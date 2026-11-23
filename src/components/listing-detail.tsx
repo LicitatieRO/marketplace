@@ -25,6 +25,12 @@ import {
   X,
 } from "lucide-react";
 import type { Listing } from "@/lib/types";
+import {
+  bidGlossary,
+  legalAuctionBadge,
+  legalOfferFineprint,
+  legalSimulationScopeNote,
+} from "@/lib/bid-copy";
 import { listingDescription, listingTitle } from "@/lib/i18n";
 import { dateTime, money } from "@/lib/format";
 import {
@@ -33,6 +39,7 @@ import {
 import { openCookiePreferences } from "@/lib/optional-content-events";
 import { Feedback, useMutation, usePlatform } from "./platform";
 import { AuctionCountdown, useAuctionCountdown } from "./auction-countdown";
+import { BidConfirmPanel } from "./bid-confirm-panel";
 import { buildAccountSignInUrl } from "@/lib/security";
 export function ListingDetail({ listing }: { listing: Listing }) {
   const { language, t, configured, viewer, favorites, setFavoriteSaved } =
@@ -124,24 +131,29 @@ export function ListingDetail({ listing }: { listing: Listing }) {
     viewer?.id && listing.owner_id && viewer.id === listing.owner_id,
   );
   const canWrite = configured && !!viewer;
+  const bidTerms = bidGlossary(language);
+  const [confirmAmountMinor, setConfirmAmountMinor] = useState<number | null>(
+    null,
+  );
   const minimum =
     listing.current_bid_minor !== null
       ? listing.current_bid_minor + (listing.min_increment_minor || 0)
       : listing.starting_price_minor || listing.price_minor;
-  const submitBid = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
+  const submitBid = async () => {
+    if (confirmAmountMinor === null || !listing.auction_id) return;
     if (
       await mutation.mutate(
         "place_bid",
         {
           p_auction_id: listing.auction_id,
-          p_amount_minor: Math.round(Number(form.get("amount")) * 100),
+          p_amount_minor: confirmAmountMinor,
         },
-        t("Oferta ta a fost înregistrată.", "Your offer has been recorded."),
+        bidTerms.bidRecordedSimulation,
       )
-    )
+    ) {
+      setConfirmAmountMinor(null);
       router.refresh();
+    }
   };
   const submitContact = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -580,9 +592,9 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                     className={`badge ${listing.auction_mode === "sealed" ? "badge-navy" : "badge-coral"}`}
                   >
                     <span className="status-dot" />
-                    {listing.auction_mode === "sealed"
-                      ? t("OFERTE CONFIDENȚIALE", "CONFIDENTIAL OFFERS")
-                      : t("LICITAȚIE ASCENDENTĂ", "ASCENDING AUCTION")}
+                    {listing.auction_mode
+                      ? legalAuctionBadge(listing.auction_mode, language)
+                      : null}
                   </span>
                   {listing.auction_access === "invite" && (
                     <span className="access-label">
@@ -654,9 +666,12 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                   </p>
                 )}
                 {canWrite && !isOwner && auctionLive ? (
-                  <form onSubmit={submitBid} className="stack-form">
+                  <form
+                    className="stack-form"
+                    onSubmit={(event) => event.preventDefault()}
+                  >
                     <label>
-                      {t("Oferta ta în EUR", "Your offer in EUR")}
+                      {bidTerms.yourOfferEur}
                       <div className="currency-input">
                         <input
                           name="amount"
@@ -677,17 +692,66 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                         <span>EUR</span>
                       </div>
                     </label>
-                    <button className="button primary" disabled={mutation.busy}>
-                      {mutation.busy
-                        ? t("Se înregistrează…", "Submitting…")
-                        : listing.auction_mode === "sealed"
-                          ? t(
+                    {listing.auction_mode === "sealed" ? (
+                      <button
+                        type="button"
+                        className="button primary"
+                        disabled={mutation.busy}
+                        data-testid="listing-place-bid"
+                        onClick={(event) => {
+                          const form = event.currentTarget.form;
+                          if (!form) return;
+                          const raw = Number(
+                            new FormData(form).get("amount"),
+                          );
+                          const minor = Math.round(raw * 100);
+                          if (!Number.isFinite(minor) || minor <= 0) return;
+                          setConfirmAmountMinor(minor);
+                        }}
+                      >
+                        {mutation.busy
+                          ? t("Se înregistrează…", "Submitting…")
+                          : t(
                               "Trimite oferta confidențială",
                               "Send confidential offer",
-                            )
-                          : t("Înregistrează oferta", "Place an offer")}
-                      <ArrowUpRight size={16} />
-                    </button>
+                            )}
+                        <ArrowUpRight size={16} />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="button primary"
+                        disabled={mutation.busy}
+                        data-testid="listing-place-bid"
+                        onClick={(event) => {
+                          const form = event.currentTarget.form;
+                          if (!form) return;
+                          const raw = Number(
+                            new FormData(form).get("amount"),
+                          );
+                          const minor = Math.round(raw * 100);
+                          if (!Number.isFinite(minor) || minor < minimum)
+                            return;
+                          setConfirmAmountMinor(minor);
+                        }}
+                      >
+                        {mutation.busy
+                          ? t("Se înregistrează…", "Submitting…")
+                          : bidTerms.placeBid}
+                        <ArrowUpRight size={16} />
+                      </button>
+                    )}
+                    {confirmAmountMinor !== null ? (
+                      <BidConfirmPanel
+                        language={language}
+                        amountMinor={confirmAmountMinor}
+                        minIncrementMinor={listing.min_increment_minor || 0}
+                        busy={mutation.busy}
+                        testId="listing-bid-confirm-panel"
+                        onCancel={() => setConfirmAmountMinor(null)}
+                        onConfirm={() => void submitBid()}
+                      />
+                    ) : null}
                     <Feedback
                       error={mutation.error}
                       message={mutation.message}
@@ -703,19 +767,11 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                     className="button primary"
                     href={buildAccountSignInUrl(listingPath)}
                   >
-                    {t(
-                      "Intră în cont pentru a participa",
-                      "Sign in to participate",
-                    )}
+                    {bidTerms.signInToBid}
                     <ArrowUpRight size={16} />
                   </Link>
                 ) : null}
-                <p className="offer-fineprint">
-                  {t(
-                    "Proprietarul selectează oferta după închidere. Invitația și validarea contului sunt necesare unde se aplică. Ora și eligibilitatea sunt verificate de server.",
-                    "The owner selects an offer after closing. An invitation and verified account are required where applicable. The server verifies timing and eligibility.",
-                  )}
-                </p>
+                <p className="offer-fineprint">{legalOfferFineprint(language)}</p>
               </>
             ) : (
               <>
@@ -743,10 +799,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
             <div className="simulation-note">
               <ShieldCheck size={18} />
               <span>
-                {t(
-                  "Rezervări doar simulate. Fără plăți, portofel sau transfer de bani reali.",
-                  "Reservations are simulation only. No payments, wallet, or real money transfers.",
-                )}
+                {legalSimulationScopeNote(language)}
               </span>
             </div>
           </div>

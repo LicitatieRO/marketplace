@@ -54,6 +54,21 @@ export function ListingsMapCanvas({
     return <MapGloballyUnavailable />;
   }
 
+  if (
+    mapProviderSurface === "interactive" &&
+    allowsTiles &&
+    !showOnLayout
+  ) {
+    return (
+      <p className="muted small listings-map-layout-hint" data-testid="listings-map-layout-hint">
+        {t(
+          "Apasă „Hartă” pentru a vedea licitațiile pe hartă.",
+          "Tap “Map” to view listings on the map.",
+        )}
+      </p>
+    );
+  }
+
   if (showInteractiveMap) {
     return (
       <ListingsInteractiveMap

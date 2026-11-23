@@ -25,6 +25,10 @@ import { listingTitle } from "@/lib/i18n";
 import { Feedback, useMutation, usePlatform } from "./platform";
 import { PropertyCard } from "./catalogue";
 import { PropertyPromoPanel } from "./payments/property-promo-panel";
+import {
+  promoEnvironmentNote,
+  type PromoCheckoutMode,
+} from "@/lib/payments/promo-client";
 import { SealedOfferComparison } from './sealed-offer-comparison';
 type Row = Record<string, unknown>;
 const str = (row: Row, key: string) => String(row[key] ?? "");
@@ -59,6 +63,8 @@ export function WorkspaceView({
   const [now, setNow] = useState(0);
   const [section, setSection] = useState("activity");
   const [conversation, setConversation] = useState<string | null>(null);
+  const [promoCheckoutMode, setPromoCheckoutMode] =
+    useState<PromoCheckoutMode | null>(null);
   const mutation = useMutation();
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -103,6 +109,32 @@ export function WorkspaceView({
   useEffect(() => {
     queueMicrotask(() => void load());
   }, [load]);
+  useEffect(() => {
+    if (tab !== "owner" || !configured) return;
+    let cancelled = false;
+    void fetch("/api/payments/promo/status", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((body) => {
+        if (cancelled) return;
+        const mode = body?.data?.mode;
+        if (
+          mode === "blocked" ||
+          mode === "unavailable" ||
+          mode === "stripe_test" ||
+          mode === "mock"
+        ) {
+          setPromoCheckoutMode(mode);
+        } else {
+          setPromoCheckoutMode("unavailable");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPromoCheckoutMode("unavailable");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, configured]);
   const act = async (action: string, payload: Row, success?: string) => {
     if (await mutation.mutate(action, payload, success)) await load();
   };
@@ -276,6 +308,11 @@ export function WorkspaceView({
                   }}
                 />
               )}
+              {promoCheckoutMode ? (
+                <p className="muted promo-workspace-note" role="note">
+                  {promoEnvironmentNote(promoCheckoutMode, t)}
+                </p>
+              ) : null}
               <div className="owned-properties">
                 {data.properties.length ? (
                   data.properties.map((property) => (
@@ -348,11 +385,14 @@ export function WorkspaceView({
                             </div>
                           ))}
                       </div>
-                      <PropertyPromoPanel
-                        propertyId={str(property, "id")}
-                        promos={data.property_promos ?? []}
-                        onComplete={load}
-                      />
+                      {promoCheckoutMode ? (
+                        <PropertyPromoPanel
+                          propertyId={str(property, "id")}
+                          promos={data.property_promos ?? []}
+                          onComplete={load}
+                          checkoutMode={promoCheckoutMode}
+                        />
+                      ) : null}
                     </article>
                   ))
                 ) : (

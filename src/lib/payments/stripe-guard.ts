@@ -95,6 +95,10 @@ export function paymentsUnavailableResponse(): { error: 'payments_unavailable' }
   return { error: 'payments_unavailable' };
 }
 
+export function paymentsBlockedResponse(): { error: 'payments_blocked' } {
+  return { error: 'payments_blocked' };
+}
+
 export function assertStripeTestEvent(event: Stripe.Event): void {
   if (event.livemode !== false) {
     throw new RequestError('Live mode events are not processed in this POC.', 400);

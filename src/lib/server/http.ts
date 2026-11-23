@@ -31,7 +31,7 @@ type FailureOptions = { language?: Language };
 export function failure(error: unknown, options?: FailureOptions) {
   const language = options?.language ?? 'en';
   if (error instanceof PublicValidationError) {
-  if (!(publicValidationCodes as readonly string[]).includes(error.code)) {
+    if (!(publicValidationCodes as readonly string[]).includes(error.code)) {
       return json({ error: 'Invalid request.' }, 400);
     }
     return json({ error: publicValidationMessage(error.code, language) }, error.status);

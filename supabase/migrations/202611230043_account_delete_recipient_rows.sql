@@ -3,19 +3,10 @@
 DO $$
 DECLARE
   v_confdeltype "char";
-  v_ref_auth_users boolean;
+  v_confrelid oid;
 BEGIN
-  SELECT
-    c.confdeltype,
-  EXISTS (
-      SELECT 1
-      FROM pg_class AS ref_cls
-      JOIN pg_namespace AS ref_ns ON ref_ns.oid = ref_cls.relnamespace
-      WHERE ref_cls.oid = c.confrelid
-        AND ref_ns.nspname = 'auth'
-        AND ref_cls.relname = 'users'
-    )
-  INTO v_confdeltype, v_ref_auth_users
+  SELECT c.confdeltype, c.confrelid
+  INTO v_confdeltype, v_confrelid
   FROM pg_constraint AS c
   JOIN pg_class AS src_cls ON src_cls.oid = c.conrelid
   JOIN pg_namespace AS src_ns ON src_ns.oid = src_cls.relnamespace
@@ -28,7 +19,7 @@ BEGIN
     RAISE EXCEPTION 'notification_outbox_user_id_fkey missing';
   END IF;
 
-  IF v_confdeltype = 'c' AND v_ref_auth_users THEN
+  IF v_confdeltype = 'c' AND v_confrelid = 'app.profiles'::regclass THEN
     RETURN;
   END IF;
 
@@ -38,43 +29,12 @@ BEGIN
   ALTER TABLE app.notification_outbox
     ADD CONSTRAINT notification_outbox_user_id_fkey
     FOREIGN KEY (user_id)
-    REFERENCES auth.users(id)
+    REFERENCES app.profiles(id)
     ON DELETE CASCADE
     NOT VALID;
 
   ALTER TABLE app.notification_outbox
     VALIDATE CONSTRAINT notification_outbox_user_id_fkey;
-END $$;
-
-DO $$
-DECLARE
-  v_confdeltype "char";
-BEGIN
-  SELECT c.confdeltype
-  INTO v_confdeltype
-  FROM pg_constraint AS c
-  JOIN pg_class AS src_cls ON src_cls.oid = c.conrelid
-  JOIN pg_namespace AS src_ns ON src_ns.oid = src_cls.relnamespace
-  WHERE src_ns.nspname = 'app'
-    AND src_cls.relname = 'auction_members'
-    AND c.conname = 'auction_members_user_id_fkey'
-    AND c.contype = 'f';
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'auction_members_user_id_fkey missing';
-  END IF;
-
-  IF v_confdeltype <> 'c' THEN
-    RETURN;
-  END IF;
-
-  ALTER TABLE app.auction_members
-    DROP CONSTRAINT auction_members_user_id_fkey;
-
-  ALTER TABLE app.auction_members
-    ADD CONSTRAINT auction_members_user_id_fkey
-    FOREIGN KEY (user_id)
-    REFERENCES app.profiles(id);
 END $$;
 
 CREATE OR REPLACE FUNCTION app.account_delete_release_invites(p_user_id uuid)

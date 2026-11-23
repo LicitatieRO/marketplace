@@ -48,7 +48,12 @@ test.describe("social login (coming soon) and data deletion legal page", () => {
     ).toBeVisible();
     await expect(
       page.getByText(
-        "If you submitted an illegal-content report using your name or email address",
+        "Notifications you received and auction invitations you never acted on are also deleted with your account.",
+      ),
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "If you sent auction invitations or placed bids, automatic deletion may be blocked",
       ),
     ).toBeVisible();
     await expect(page.getByText("promotions or reports")).toHaveCount(0);

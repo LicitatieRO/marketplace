@@ -1,6 +1,6 @@
 BEGIN;
 SET search_path = public, extensions;
-SELECT plan(32);
+SELECT plan(33);
 
 SELECT ok(
   has_function_privilege('service_role', 'public.account_delete_eligibility(uuid)', 'EXECUTE'),
@@ -41,6 +41,20 @@ SELECT ok(
 SELECT ok(
   NOT has_function_privilege('authenticated', 'app.account_delete_release_invites(uuid)', 'EXECUTE'),
   'authenticated cannot call account delete release invites'
+);
+SELECT ok(
+  EXISTS (
+    SELECT 1
+    FROM pg_constraint AS c
+    JOIN pg_class AS src ON src.oid = c.conrelid
+    JOIN pg_namespace AS ns ON ns.oid = src.relnamespace
+    WHERE ns.nspname = 'app'
+      AND src.relname = 'notification_outbox'
+      AND c.conname = 'notification_outbox_user_id_fkey'
+      AND c.confdeltype = 'c'
+      AND c.confrelid = 'app.profiles'::regclass
+  ),
+  'notification outbox user_id cascades on app.profiles delete'
 );
 
 SELECT set_eq(

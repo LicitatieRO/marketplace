@@ -252,6 +252,23 @@ export function ListingsInteractiveMap({
 
   useEffect(() => {
     if (!mapReady) return;
+    const map = mapRef.current;
+    const root = rootRef.current;
+    if (!map || !root) return;
+
+    const resize = () => {
+      map.invalidateSize();
+    };
+    resize();
+    const observer = new ResizeObserver(() => {
+      resize();
+    });
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, [mapReady]);
+
+  useEffect(() => {
+    if (!mapReady) return;
     const cluster = clusterRef.current;
     if (!cluster) return;
 
@@ -279,17 +296,13 @@ export function ListingsInteractiveMap({
 
   return (
     <div
+      className="listings-map-interactive-shell"
       data-testid="listings-map-interactive"
       data-map-bounds-settled-revision={boundsSettledRevision}
       data-map-zoom={mapZoom}
       data-map-min-zoom={6}
-      style={{ position: "relative", width: "100%", height: "100%", minHeight: 320 }}
     >
-      <div
-        ref={rootRef}
-        className="listings-map-canvas"
-        style={{ width: "100%", height: "100%", minHeight: 320 }}
-      />
+      <div ref={rootRef} className="listings-map-canvas" />
       <MapExtractBoundsOverlay
         mapRef={mapRef}
         mapTileConfig={mapTileConfig}

@@ -31,6 +31,8 @@ import {
   AccountSwitcher,
   readDualGuestView,
 } from "@/components/account-switcher";
+import { tourUi } from "@/lib/i18n";
+import { TOUR_START_EVENT } from "@/lib/tour/events";
 type Theme = "system" | "light" | "dark";
 type Platform = {
   language: Language;
@@ -50,6 +52,20 @@ export function usePlatform() {
   const value = useContext(Context);
   if (!value) throw new Error("Platform provider missing");
   return value;
+}
+
+function TourHeaderButton() {
+  const { t } = usePlatform();
+  return (
+    <button
+      type="button"
+      className="button tour-header-button"
+      data-testid="tour-start-header"
+      onClick={() => window.dispatchEvent(new CustomEvent(TOUR_START_EVENT))}
+    >
+      {t(...tourUi.takeTour)}
+    </button>
+  );
 }
 export function PlatformProvider({
   children,
@@ -190,6 +206,7 @@ export function PlatformProvider({
             </Link>
           </nav>
           <div className="header-actions">
+            <TourHeaderButton />
             <button
               className="locale-button"
               onClick={toggleLanguage}
@@ -219,6 +236,7 @@ export function PlatformProvider({
             <Link
               className="account-button"
               href={effectiveViewer ? "/workspace" : "/account"}
+              data-tour="account-signin"
             >
               {effectiveViewer
                 ? t("Spațiul meu", "My workspace")

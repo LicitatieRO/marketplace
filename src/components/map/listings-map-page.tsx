@@ -657,7 +657,7 @@ export function ListingsMapPage() {
             })
           )}
         </aside>
-        <section className="listings-map-map">
+        <section className="listings-map-map" data-tour="map-page">
           <button
             type="button"
             className="listings-map-mobile-toggle"

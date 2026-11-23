@@ -1,6 +1,25 @@
 import type { Language, Listing } from "./types";
 export const translate = (language: Language, ro: string, en: string) =>
   language === "ro" ? ro : en;
+
+export const tourUi = {
+  takeTour: ["Fă turul", "Take the tour"] as const,
+  resumeTour: ["Continuă turul", "Resume tour"] as const,
+  skipTour: ["Sari peste tur", "Skip tour"] as const,
+  closeTour: ["Închide turul", "Close tour"] as const,
+  nextStep: ["Pasul următor", "Next step"] as const,
+  prevStep: ["Pasul anterior", "Previous step"] as const,
+  stepOf: (current: number, total: number) =>
+    [`Pasul ${current} din ${total}`, `Step ${current} of ${total}`] as const,
+  stepUnavailable: [
+    "Pas indisponibil — trecem mai departe.",
+    "Step unavailable — moving on.",
+  ] as const,
+  tourComplete: [
+    "Turul s-a încheiat. Poți relua oricând din antet.",
+    "Tour complete. You can restart anytime from the header.",
+  ] as const,
+};
 export function listingTitle(listing: Listing, language: Language) {
   if (language === "ro" || !listing.property_id.startsWith("10000000-"))
     return listing.title;

@@ -89,6 +89,7 @@ export function CatalogueMap({
         style={{ marginBottom: 24 }}
         aria-label={t("Hartă catalog", "Catalogue map")}
         data-testid="catalogue-map-unavailable"
+        data-tour="catalogue-map"
       >
         <MapGloballyUnavailable />
       </section>
@@ -102,6 +103,7 @@ export function CatalogueMap({
         style={{ marginBottom: 24 }}
         aria-label={t("Hartă catalog", "Catalogue map")}
         data-testid="catalogue-map-placeholder"
+        data-tour="catalogue-map"
       >
         <div className="feedback notice" style={{ padding: 16 }}>
           <p style={{ fontWeight: 600, marginBottom: 8 }}>
@@ -136,6 +138,7 @@ export function CatalogueMap({
       className="page-width"
       style={{ marginBottom: 24 }}
       aria-label={t("Hartă catalog", "Catalogue map")}
+      data-tour="catalogue-map"
     >
       <p
         className="muted small"

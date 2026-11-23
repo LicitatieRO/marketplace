@@ -243,7 +243,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
             )}
           </p>
         </div>
-        <div className="detail-price">
+        <div className="detail-price" data-tour="listing-price">
           {money(listing.price_minor, language)}
           <span>
             {listing.transaction_type === "rent"
@@ -572,7 +572,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
           </section>
         </div>
         <aside className="offer-sidebar">
-          <div className="offer-panel">
+          <div className="offer-panel" data-tour="listing-bid-panel">
             {listing.auction_id ? (
               <>
                 <div className="offer-panel-top">
@@ -677,7 +677,11 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                         <span>EUR</span>
                       </div>
                     </label>
-                    <button className="button primary" disabled={mutation.busy}>
+                    <button
+                      className="button primary"
+                      disabled={mutation.busy}
+                      data-tour="listing-bid-button"
+                    >
                       {mutation.busy
                         ? t("Se înregistrează…", "Submitting…")
                         : listing.auction_mode === "sealed"

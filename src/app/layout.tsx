@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { PlatformProvider } from "@/components/platform";
+import { TourShell } from "@/components/tour/tour-shell";
 import { isConfigured } from "@/lib/config";
 import { getMapTileClientConfig } from "@/lib/server/map-tile-config";
 import { isPocSwitcherServerEnabled } from "@/lib/server/poc-switcher";
@@ -39,7 +40,7 @@ export default async function RootLayout({
           pocSwitcher={pocSwitcher}
           mapTileConfig={mapTileConfig}
         >
-          {children}
+          <TourShell>{children}</TourShell>
         </PlatformProvider>
       </body>
     </html>

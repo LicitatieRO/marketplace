@@ -30,4 +30,22 @@ describe('listingUrlFromRequest', () => {
       `https://app.example.test/listings/${id}`,
     );
   });
+
+  it('fails closed when no site origin is configured', async () => {
+    delete process.env.APP_URL;
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    delete process.env.NEXT_PUBLIC_APP_URL;
+    process.env.VERCEL_URL = 'evil-preview.vercel.app';
+    vi.resetModules();
+    const { listingUrlFromRequest } = await import('@/lib/dsa-notice-url');
+    const id = '20000000-0000-4000-8000-000000000003';
+    expect(() =>
+      listingUrlFromRequest(id, 'https://evil-preview.vercel.app/api/dsa-notices'),
+    ).toThrow('APP_URL must be configured.');
+    try {
+      listingUrlFromRequest(id, 'https://evil-preview.vercel.app/api/dsa-notices');
+    } catch (error) {
+      expect(error).toMatchObject({ status: 503, message: 'APP_URL must be configured.' });
+    }
+  });
 });

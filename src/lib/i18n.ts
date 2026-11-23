@@ -118,8 +118,6 @@ export function localizedMessage(message: string, language: Language): string {
       "Ștergerea contului nu este disponibilă până când profilul poate fi verificat. Reîncarcă pagina și încearcă din nou.",
     "Close or complete your published listings, active auctions, bids in ongoing auctions, open reservations or pending promotions before deleting your account, or send a deletion request to the data-protection contact in our privacy notice.":
       "Închideți sau finalizați anunțurile publicate, licitațiile active, ofertele din licitațiile în desfășurare, rezervările în curs sau promovările în așteptare înainte de a șterge contul, sau trimiteți o solicitare de ștergere la datele de contact pentru protecția datelor din politica de confidențialitate.",
-    "You have submitted an illegal-content report with this email address, so your account is deleted by request rather than automatically. Send a deletion request to the data-protection contact in our privacy notice; we will reply within one month.":
-      "Ați trimis o sesizare privind conținut ilegal folosind această adresă de email, așa că ștergerea contului se face prin solicitare, nu automat. Trimiteți o solicitare de ștergere la datele de contact pentru protecția datelor din politica de confidențialitate; vă răspundem în cel mult o lună.",
     "Your account can't be deleted automatically because it has activity on record. Your right to erasure still applies: send a deletion request to the data-protection contact in our privacy notice. We will reply within one month and tell you what we erase, anonymise or keep, and why.":
       "Contul nu poate fi șters automat deoarece are activitate înregistrată. Dreptul la ștergere se aplică în continuare: trimiteți o solicitare la datele de contact pentru protecția datelor din politica de confidențialitate. Vă răspundem în cel mult o lună și vă spunem ce ștergem, ce anonimizăm sau ce păstrăm și de ce.",
     "Account not found.":
@@ -128,16 +126,17 @@ export function localizedMessage(message: string, language: Language): string {
       "Tastează adresa de email sau ȘTERGE / DELETE pentru confirmare.",
     "Account deletion is not configured on this environment.":
       "Ștergerea contului nu este configurată în acest mediu.",
-    "Could not delete the account.":
-      "Nu am putut șterge contul.",
-    "Unable to read linked sign-in methods.":
-      "Nu am putut citi metodele de autentificare asociate.",
     "Keep at least one sign-in method on your account.":
       "Păstrați cel puțin o metodă de autentificare pe cont.",
     "Sign-in method not found.":
       "Metoda de autentificare nu a fost găsită.",
     "Could not unlink this sign-in method.":
       "Nu am putut elimina această metodă de autentificare.",
+    "Your explanation must be at least 30 characters.":
+      "Explicația trebuie să aibă cel puțin 30 de caractere.",
+    "Enter a valid email address.": "Introdu o adresă de email validă.",
+    "This required field is missing.": "Completează acest câmp obligatoriu.",
+    "Invalid request.": "Cerere invalidă.",
   };
   return messages[message] || message;
 }

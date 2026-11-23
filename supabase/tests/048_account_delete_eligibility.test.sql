@@ -1,6 +1,6 @@
 BEGIN;
 SET search_path = public, extensions;
-SELECT plan(20);
+SELECT plan(23);
 
 SELECT ok(
   has_function_privilege('service_role', 'public.account_delete_eligibility(uuid)', 'EXECUTE'),
@@ -74,7 +74,9 @@ VALUES
   ('a1690001-0000-4000-8000-000000000003', 'adelete-history@example.test', now()),
   ('a1690001-0000-4000-8000-000000000004', 'adelete-dsa@example.test', now()),
   ('a1690001-0000-4000-8000-000000000005', 'adelete-blockers@example.test', now()),
-  ('a1690001-0000-4000-8000-000000000006', 'adelete-auction-owner@example.test', now())
+  ('a1690001-0000-4000-8000-000000000006', 'adelete-auction-owner@example.test', now()),
+  ('a1690001-0000-4000-8000-000000000007', 'adelete-invitee@example.test', now()),
+  ('a1690001-0000-4000-8000-000000000008', 'adelete-notify@example.test', now())
 ON CONFLICT (id) DO NOTHING;
 
 UPDATE app.profiles SET is_staff = true
@@ -108,6 +110,16 @@ SELECT set_config(
 SELECT set_config(
   'test.auction_owner',
   'a1690001-0000-4000-8000-000000000006',
+  true
+);
+SELECT set_config(
+  'test.invitee_user',
+  'a1690001-0000-4000-8000-000000000007',
+  true
+);
+SELECT set_config(
+  'test.notify_user',
+  'a1690001-0000-4000-8000-000000000008',
   true
 );
 
@@ -386,7 +398,7 @@ INSERT INTO app.listings (
   current_setting('test.blocker_user')::uuid,
   'sale',
   40000000,
-  'published'
+  'closed'
 );
 
 INSERT INTO app.auctions (
@@ -474,7 +486,7 @@ INSERT INTO app.listings (
   current_setting('test.auction_owner')::uuid,
   'sale',
   35000000,
-  'published'
+  'closed'
 );
 
 INSERT INTO app.auctions (
@@ -577,7 +589,7 @@ INSERT INTO app.listings (
   current_setting('test.auction_owner')::uuid,
   'sale',
   28000000,
-  'published'
+  'closed'
 );
 
 INSERT INTO app.auctions (
@@ -704,6 +716,69 @@ SELECT is(
   ),
   'open_promotions',
   'pending promotion blocks delete'
+);
+RESET ROLE;
+
+INSERT INTO app.auction_members (
+  auction_id,
+  user_id,
+  invited_by
+) VALUES (
+  'a1690109-0000-4000-8000-000000000030',
+  current_setting('test.invitee_user')::uuid,
+  current_setting('test.auction_owner')::uuid
+);
+
+SET LOCAL ROLE service_role;
+SELECT is(
+  public.account_delete_eligibility(
+    current_setting('test.invitee_user')::uuid
+  ),
+  NULL,
+  'invite-only auction member may delete'
+);
+RESET ROLE;
+
+DELETE FROM app.auction_members
+WHERE user_id = current_setting('test.invitee_user')::uuid;
+
+INSERT INTO app.notification_outbox (user_id, event, entity_id)
+VALUES (
+  current_setting('test.notify_user')::uuid,
+  'auction.invited',
+  'a1690109-0000-4000-8000-000000000030'
+);
+
+SET LOCAL ROLE service_role;
+SELECT is(
+  public.account_delete_eligibility(
+    current_setting('test.notify_user')::uuid
+  ),
+  NULL,
+  'notification outbox recipient-only row may delete'
+);
+RESET ROLE;
+
+DELETE FROM app.notification_outbox
+WHERE user_id = current_setting('test.notify_user')::uuid;
+
+INSERT INTO app.auction_members (
+  auction_id,
+  user_id,
+  invited_by
+) VALUES (
+  'a1690109-0000-4000-8000-000000000030',
+  current_setting('test.invitee_user')::uuid,
+  current_setting('test.auction_owner')::uuid
+);
+
+SET LOCAL ROLE service_role;
+SELECT is(
+  public.account_delete_eligibility(
+    current_setting('test.auction_owner')::uuid
+  ),
+  'has_history',
+  'auction inviter still blocked via invited_by history'
 );
 RESET ROLE;
 

@@ -78,6 +78,13 @@ export async function POST(request: Request) {
         503,
       );
     }
+    const { error: releaseError } = await admin.rpc(
+      "account_delete_release_invites",
+      { p_user_id: user.id },
+    );
+    if (releaseError) {
+      throw new RequestError("Could not delete the account.", 503);
+    }
     const { error } = await admin.auth.admin.deleteUser(user.id);
     if (error) {
       const message = error.message ?? "";

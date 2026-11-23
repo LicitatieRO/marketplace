@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 const deleteUser = vi.fn();
+const rpc = vi.fn();
 const enforceAuthHttpRateLimit = vi.fn();
 const accountDeleteBlockReason = vi.fn();
 const getViewer = vi.fn();
@@ -37,6 +38,7 @@ vi.mock("@/lib/server/auth", () => ({
 vi.mock("@/lib/server/service-role", () => ({
   serviceRoleClient: vi.fn(() => ({
     auth: { admin: { deleteUser } },
+    rpc,
   })),
 }));
 
@@ -55,6 +57,7 @@ afterEach(() => {
     display_name: "Member",
   });
   deleteUser.mockResolvedValue({ error: null });
+  rpc.mockResolvedValue({ data: 0, error: null });
 });
 
 function deleteRequest(body: Record<string, unknown>) {
@@ -166,6 +169,9 @@ describe("POST /api/account/delete", () => {
       }),
     );
     expect(response.status).toBe(200);
+    expect(rpc).toHaveBeenCalledWith("account_delete_release_invites", {
+      p_user_id: "user-1",
+    });
     expect(deleteUser).toHaveBeenCalledWith("user-1");
   });
 
@@ -189,6 +195,26 @@ describe("POST /api/account/delete", () => {
     expect(body.error).toContain("can't be deleted automatically");
     expect(body.error).not.toContain("foreign key");
     expect(body.error).not.toContain("bids_bidder_id_fkey");
+  });
+
+  it("returns masked 503 when release invites fails", async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: { message: "release failed" },
+    });
+    const { POST } = await import("@/app/api/account/delete/route");
+    const response = await POST(
+      deleteRequest({
+        confirm: true,
+        confirmation: "DELETE",
+      }),
+    );
+    const body = await response.json();
+    expect(response.status).toBe(503);
+    expect(body.error).toBe(
+      "The request could not be completed. Please try again.",
+    );
+    expect(deleteUser).not.toHaveBeenCalled();
   });
 
   it("redacts deleteUser failures that are not foreign-key blocks", async () => {

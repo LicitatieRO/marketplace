@@ -1,6 +1,6 @@
 BEGIN;
 SET search_path = public, extensions;
-SELECT plan(23);
+SELECT plan(32);
 
 SELECT ok(
   has_function_privilege('service_role', 'public.account_delete_eligibility(uuid)', 'EXECUTE'),
@@ -29,6 +29,18 @@ SELECT ok(
 SELECT ok(
   NOT has_function_privilege('authenticated', 'app.account_delete_non_cascade_user_fks()', 'EXECUTE'),
   'authenticated cannot call account delete non-cascade FK helper'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'app.account_delete_release_invites(uuid)', 'EXECUTE'),
+  'service_role may call account delete release invites'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'app.account_delete_release_invites(uuid)', 'EXECUTE'),
+  'anon cannot call account delete release invites'
+);
+SELECT ok(
+  NOT has_function_privilege('authenticated', 'app.account_delete_release_invites(uuid)', 'EXECUTE'),
+  'authenticated cannot call account delete release invites'
 );
 
 SELECT set_eq(
@@ -737,10 +749,23 @@ SELECT is(
   NULL,
   'invite-only auction member may delete'
 );
+SELECT is(
+  app.account_delete_release_invites(
+    current_setting('test.invitee_user')::uuid
+  ),
+  1,
+  'release invites removes exactly one invite-only membership row'
+);
 RESET ROLE;
 
-DELETE FROM app.auction_members
-WHERE user_id = current_setting('test.invitee_user')::uuid;
+SELECT ok(
+  NOT EXISTS (
+    SELECT 1
+    FROM app.auction_members
+    WHERE user_id = current_setting('test.invitee_user')::uuid
+  ),
+  'invite-only membership row removed after release invites'
+);
 
 INSERT INTO app.notification_outbox (user_id, event, entity_id)
 VALUES (
@@ -780,7 +805,64 @@ SELECT is(
   'has_history',
   'auction inviter still blocked via invited_by history'
 );
+SELECT is(
+  app.account_delete_release_invites(
+    current_setting('test.auction_owner')::uuid
+  ),
+  0,
+  'release invites does not remove another users membership row'
+);
 RESET ROLE;
+
+INSERT INTO app.bids (
+  auction_id,
+  bidder_id,
+  amount_minor,
+  idempotency_key
+) VALUES (
+  'a1690109-0000-4000-8000-000000000030',
+  current_setting('test.blocker_user')::uuid,
+  1150000,
+  'a1690111-0000-4000-8000-000000000030'
+);
+
+INSERT INTO app.auction_members (
+  auction_id,
+  user_id,
+  invited_by
+) VALUES (
+  'a1690109-0000-4000-8000-000000000030',
+  current_setting('test.blocker_user')::uuid,
+  current_setting('test.auction_owner')::uuid
+)
+ON CONFLICT DO NOTHING;
+
+SET LOCAL ROLE service_role;
+SELECT is(
+  public.account_delete_eligibility(
+    current_setting('test.blocker_user')::uuid
+  ),
+  'open_bids',
+  'bidder with auction membership still blocked by open bids'
+);
+SELECT is(
+  app.account_delete_release_invites(
+    current_setting('test.blocker_user')::uuid
+  ),
+  0,
+  'release invites does not remove membership when user bid in that auction'
+);
+RESET ROLE;
+
+SELECT ok(
+  EXISTS (
+    SELECT 1
+    FROM app.auction_members
+    WHERE user_id = current_setting('test.blocker_user')::uuid
+      AND auction_id = 'a1690109-0000-4000-8000-000000000030'
+  ),
+  'membership with bids remains after release invites'
+);
 
 SELECT * FROM finish();
 ROLLBACK;

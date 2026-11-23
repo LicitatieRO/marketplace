@@ -18,7 +18,7 @@ test.describe("auth/legal POC (configured backend)", () => {
   test("persistent POC banner and legal pages render", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByTestId("poc-simulation-banner")).toBeVisible();
-    const stagingDemoExpected = isStagingDemoBannerEnabled();
+    const stagingDemoExpected = isStagingDemoBannerEnabled("localhost:3000");
     const stagingDemoBanner = page.getByTestId("staging-demo-banner");
     if (stagingDemoExpected) {
       await expect(stagingDemoBanner).toBeVisible();

@@ -26,7 +26,7 @@ export default async function RootLayout({
   const requestHost = headerList.get("host");
   const nonce = headerList.get("x-nonce") ?? undefined;
   const pocSwitcher = isPocSwitcherServerEnabled(requestHost);
-  const stagingDemoBanner = isStagingDemoBannerEnabled();
+  const stagingDemoBanner = isStagingDemoBannerEnabled(requestHost);
   const mapTileConfig = getMapTileClientConfig();
   return (
     <html

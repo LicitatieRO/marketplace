@@ -61,7 +61,7 @@ If `.env.local` already exists and you need demo mode, temporarily rename it (se
 
 When you need the local Supabase stack, install **Docker Desktop** in **per-user WSL 2** mode (WSL 2 based engine, per-user installation). A per-user Docker Desktop install does not require administrator rights, but **enabling WSL 2 for the first time does require administrator elevation and may need a reboot**. After Docker is running, follow the same flow as on Linux/macOS (`npx --no-install supabase start ...`, `npm run db:reset`, `npm run local:env`). `docker run --network host` is Linux-specific; do not assume it works on Docker Desktop for Windows.
 
-Optional server flag `DEMO_BANNER=1` shows an extra “Demo – simulated data” strip on non-production runtimes (`VERCEL_ENV` not `production`). It is off by default; staging operators set it on the Vercel preview/staging project, not in this repository.
+Optional server flag `DEMO_BANNER=1` shows an extra “Demo – simulated data” strip when the flag is set and either the runtime is non-production or the deployment matches the same staging host rules as `POC_SWITCHER_ENABLED` / mock payments (`APP_URL` plus request `Host` on `STAGING_HOST_ALLOWLIST`). Set `DEMO_BANNER=1` only on the **licitatiero-staging** Vercel project; never on **licitatiero-production**.
 
 Backend browser tests need that local stack, `.env.local` from `npm run local:env`, and `npm run build`. Playwright starts the production-mode server through `webServer` when `E2E_BACKEND` is set:
 

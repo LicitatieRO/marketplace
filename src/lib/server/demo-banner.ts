@@ -1,12 +1,22 @@
-import { isProductionRuntime } from "@/lib/server/staging-host";
+import {
+  isProductionRuntime,
+  stagingHostsAllowlistedForRequest,
+} from "@/lib/server/staging-host";
 
 function demoBannerFlagEnabled(): boolean {
-  return process.env.DEMO_BANNER?.trim() === "1";
+  const value = process.env.DEMO_BANNER?.trim();
+  if (!value) return false;
+  return value === "1";
 }
 
-/** Opt-in staging pitch strip; off on production runtime even when the flag is set. */
-export function isStagingDemoBannerEnabled(): boolean {
+/**
+ * Opt-in pitch strip. Same staging deployment marker as POC switcher and mock payments:
+ * on production runtime, APP_URL and request Host must both match STAGING_HOST_ALLOWLIST.
+ */
+export function isStagingDemoBannerEnabled(
+  requestHost: string | null | undefined,
+): boolean {
   if (!demoBannerFlagEnabled()) return false;
-  if (isProductionRuntime()) return false;
-  return true;
+  if (!isProductionRuntime()) return true;
+  return stagingHostsAllowlistedForRequest(requestHost);
 }

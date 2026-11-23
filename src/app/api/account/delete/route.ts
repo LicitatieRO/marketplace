@@ -80,6 +80,13 @@ export async function POST(request: Request) {
     }
     const { error } = await admin.auth.admin.deleteUser(user.id);
     if (error) {
+      const message = error.message ?? "";
+      const fkBlocked =
+        error.code === "23503" ||
+        /foreign key|violates foreign key/i.test(message);
+      if (fkBlocked) {
+        throw new RequestError(ACCOUNT_DELETE_HAS_HISTORY_MESSAGE, 409);
+      }
       throw new RequestError("Could not delete the account.", 503);
     }
     await db.auth.signOut({ scope: "global" });

@@ -8,7 +8,6 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
-  v_email text;
   v_ref record;
   v_has_row boolean;
 BEGIN
@@ -16,10 +15,7 @@ BEGIN
     RAISE EXCEPTION 'User id required' USING ERRCODE = 'P0001';
   END IF;
 
-  SELECT u.email INTO v_email
-  FROM auth.users AS u
-  WHERE u.id = p_user_id;
-
+  PERFORM 1 FROM auth.users AS u WHERE u.id = p_user_id;
   IF NOT FOUND THEN
     RETURN 'not_found';
   END IF;

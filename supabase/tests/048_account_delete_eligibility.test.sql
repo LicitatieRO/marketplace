@@ -1,6 +1,6 @@
 BEGIN;
 SET search_path = public, extensions;
-SELECT plan(18);
+SELECT plan(20);
 
 SELECT ok(
   has_function_privilege('service_role', 'public.account_delete_eligibility(uuid)', 'EXECUTE'),
@@ -13,6 +13,22 @@ SELECT ok(
 SELECT ok(
   NOT has_function_privilege('anon', 'public.account_delete_eligibility(uuid)', 'EXECUTE'),
   'anon cannot call account delete eligibility RPC'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'app.account_delete_eligibility(uuid)', 'EXECUTE'),
+  'anon cannot call app account delete eligibility function'
+);
+SELECT ok(
+  NOT has_function_privilege('authenticated', 'app.account_delete_eligibility(uuid)', 'EXECUTE'),
+  'authenticated cannot call app account delete eligibility function'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'app.account_delete_non_cascade_user_fks()', 'EXECUTE'),
+  'anon cannot call account delete non-cascade FK helper'
+);
+SELECT ok(
+  NOT has_function_privilege('authenticated', 'app.account_delete_non_cascade_user_fks()', 'EXECUTE'),
+  'authenticated cannot call account delete non-cascade FK helper'
 );
 
 SELECT set_eq(
@@ -95,6 +111,50 @@ SELECT set_config(
   true
 );
 
+INSERT INTO app.properties (
+  id,
+  owner_id,
+  title,
+  description,
+  neighborhood,
+  exact_address,
+  property_type,
+  area_sqm,
+  rooms,
+  floor,
+  built_year,
+  judet
+) VALUES (
+  'a1690102-0000-4000-8000-000000000010',
+  current_setting('test.auction_owner')::uuid,
+  'DSA eligibility fixture listing',
+  'Deterministic listing for notice eligibility coverage.',
+  'Cotroceni',
+  '2 Fixture Street',
+  'apartment',
+  48,
+  2,
+  2,
+  1990,
+  'București'
+) ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO app.listings (
+  id,
+  property_id,
+  owner_id,
+  transaction_type,
+  price_minor,
+  status
+) VALUES (
+  'a1690103-0000-4000-8000-000000000010',
+  'a1690102-0000-4000-8000-000000000010',
+  current_setting('test.auction_owner')::uuid,
+  'sale',
+  30000000,
+  'published'
+) ON CONFLICT (id) DO NOTHING;
+
 SET LOCAL ROLE service_role;
 SELECT is(
   public.account_delete_eligibility(
@@ -126,11 +186,10 @@ SELECT is(
 RESET ROLE;
 
 INSERT INTO app.favorites (user_id, listing_id)
-SELECT
+VALUES (
   current_setting('test.history_user')::uuid,
-  l.id
-FROM app.listings l
-LIMIT 1;
+  'a1690103-0000-4000-8000-000000000010'
+);
 
 SET LOCAL ROLE service_role;
 SELECT is(
@@ -219,50 +278,6 @@ WHERE owner_id = current_setting('test.history_user')::uuid;
 
 DELETE FROM app.properties
 WHERE id = 'a1690100-0000-4000-8000-000000000099';
-
-INSERT INTO app.properties (
-  id,
-  owner_id,
-  title,
-  description,
-  neighborhood,
-  exact_address,
-  property_type,
-  area_sqm,
-  rooms,
-  floor,
-  built_year,
-  judet
-) VALUES (
-  'a1690102-0000-4000-8000-000000000010',
-  current_setting('test.auction_owner')::uuid,
-  'DSA eligibility fixture listing',
-  'Deterministic listing for notice eligibility coverage.',
-  'Cotroceni',
-  '2 Fixture Street',
-  'apartment',
-  48,
-  2,
-  2,
-  1990,
-  'București'
-);
-
-INSERT INTO app.listings (
-  id,
-  property_id,
-  owner_id,
-  transaction_type,
-  price_minor,
-  status
-) VALUES (
-  'a1690103-0000-4000-8000-000000000010',
-  'a1690102-0000-4000-8000-000000000010',
-  current_setting('test.auction_owner')::uuid,
-  'sale',
-  30000000,
-  'published'
-);
 
 INSERT INTO app.dsa_notices (
   listing_id,

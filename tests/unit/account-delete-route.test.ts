@@ -168,4 +168,48 @@ describe("POST /api/account/delete", () => {
     expect(response.status).toBe(200);
     expect(deleteUser).toHaveBeenCalledWith("user-1");
   });
+
+  it("returns 409 when deleteUser fails with a foreign-key block", async () => {
+    deleteUser.mockResolvedValue({
+      error: {
+        code: "23503",
+        message:
+          'update or delete on table "users" violates foreign key constraint "bids_bidder_id_fkey"',
+      },
+    });
+    const { POST } = await import("@/app/api/account/delete/route");
+    const response = await POST(
+      deleteRequest({
+        confirm: true,
+        confirmation: "DELETE",
+      }),
+    );
+    const body = await response.json();
+    expect(response.status).toBe(409);
+    expect(body.error).toContain("can't be deleted automatically");
+    expect(body.error).not.toContain("foreign key");
+    expect(body.error).not.toContain("bids_bidder_id_fkey");
+  });
+
+  it("redacts deleteUser failures that are not foreign-key blocks", async () => {
+    deleteUser.mockResolvedValue({
+      error: {
+        code: "unexpected_failure",
+        message: "internal admin configuration token leak",
+      },
+    });
+    const { POST } = await import("@/app/api/account/delete/route");
+    const response = await POST(
+      deleteRequest({
+        confirm: true,
+        confirmation: "DELETE",
+      }),
+    );
+    const body = await response.json();
+    expect(response.status).toBe(503);
+    expect(body.error).toBe(
+      "The request could not be completed. Please try again.",
+    );
+    expect(JSON.stringify(body)).not.toContain("token leak");
+  });
 });

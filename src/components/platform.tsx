@@ -22,6 +22,7 @@ import type { MapTileClientConfig } from "@/lib/map-tile-client";
 import type { Language, Viewer } from "@/lib/types";
 import { localizedMessage, translate } from "@/lib/i18n";
 import { PocSiteBanner } from "@/components/disclosures/poc-disclosure";
+import { StagingDemoBanner } from "@/components/disclosures/staging-demo-banner";
 import {
   CookieConsentBanner,
   CookiePreferencesControl,
@@ -55,11 +56,13 @@ export function PlatformProvider({
   children,
   configured,
   pocSwitcher = false,
+  stagingDemoBanner = false,
   mapTileConfig,
 }: {
   children: ReactNode;
   configured: boolean;
   pocSwitcher?: boolean;
+  stagingDemoBanner?: boolean;
   mapTileConfig: MapTileClientConfig;
 }) {
   const [language, setLanguage] = useState<Language>("ro");
@@ -261,6 +264,7 @@ export function PlatformProvider({
           </nav>
         )}
       </header>
+      {stagingDemoBanner ? <StagingDemoBanner /> : null}
       <PocSiteBanner />
       {!configured && (
         <div className="demo-banner">

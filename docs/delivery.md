@@ -20,6 +20,7 @@ Create **separate** staging and production Supabase projects in Frankfurt and **
 | GitHub environment variables | `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` | Explicit team and project IDs |
 | GitHub environment variables | `SUPABASE_PROJECT_REF`, `DEPLOY_ORIGIN` | Expected database project identity and canonical HTTPS health-check origin |
 | Vercel project environment | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `APP_URL` | Corresponding Supabase project and callback/app origin |
+| Vercel project environment (staging pitch) | `DEMO_BANNER` | Set to `1` only on non-production Vercel env (preview/development) to show the simulated-data strip; must stay unset on production |
 | Vercel project environment | `SUPABASE_SECRET_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, `CRON_SECRET` | Only when the implemented email/outbox adapter is enabled; use a verified sender domain |
 | Local bootstrap only | `gh` signed-in account | Active organization membership/repository creation rights; no PAT in runtime workflows |
 | Optional manual CLI alternative | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` | Link/push through Supabase CLI if choosing that documented alternative; not used by supplied deployment script |

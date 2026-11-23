@@ -295,6 +295,18 @@ input::-webkit-inner-spin-button {
 .demo-banner .status-dot {
   color: var(--accent);
 }
+.staging-demo-banner {
+  display: block;
+  padding: 5px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  color: var(--surface);
+  background: color-mix(in srgb, var(--accent) 88%, #0f172a);
+}
 .hero {
   display: flex;
   justify-content: space-between;
@@ -2681,6 +2693,11 @@ input::-webkit-inner-spin-button {
   .demo-banner .status-dot {
     align-self: flex-start;
     margin-top: 5px;
+  }
+  .staging-demo-banner {
+    font-size: 10px;
+    padding: 6px 12px;
+    line-height: 1.45;
   }
   .page-width {
     padding-left: 24px;

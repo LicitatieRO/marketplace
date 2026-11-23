@@ -1,4 +1,8 @@
 /** Verbatim POC disclosure strings (RO primary + EN) from poc-disclosures-ro-en.md */
+export const stagingDemoBanner = {
+  ro: "Demo – toate datele sunt simulate",
+  en: "Demo – all data is simulated",
+};
 export const pocSiteBanner = {
   titleRo: "POC / Simulare",
   titleEn: "POC / Simulation",

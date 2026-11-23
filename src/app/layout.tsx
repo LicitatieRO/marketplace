@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { PlatformProvider } from "@/components/platform";
 import { isConfigured } from "@/lib/config";
 import { getMapTileClientConfig } from "@/lib/server/map-tile-config";
+import { isStagingDemoBannerEnabled } from "@/lib/server/demo-banner";
 import { isPocSwitcherServerEnabled } from "@/lib/server/poc-switcher";
 import { siteRootRobotsMetadata } from "@/lib/site-indexing";
 import "./globals.css";
@@ -25,6 +26,7 @@ export default async function RootLayout({
   const requestHost = headerList.get("host");
   const nonce = headerList.get("x-nonce") ?? undefined;
   const pocSwitcher = isPocSwitcherServerEnabled(requestHost);
+  const stagingDemoBanner = isStagingDemoBannerEnabled();
   const mapTileConfig = getMapTileClientConfig();
   return (
     <html
@@ -37,6 +39,7 @@ export default async function RootLayout({
         <PlatformProvider
           configured={isConfigured()}
           pocSwitcher={pocSwitcher}
+          stagingDemoBanner={stagingDemoBanner}
           mapTileConfig={mapTileConfig}
         >
           {children}

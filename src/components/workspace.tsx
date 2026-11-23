@@ -26,8 +26,10 @@ import { Feedback, useMutation, usePlatform } from "./platform";
 import { PropertyCard } from "./catalogue";
 import { PropertyPromoPanel } from "./payments/property-promo-panel";
 import {
+  promoCheckoutModeFromStatus,
   promoEnvironmentNote,
   type PromoCheckoutMode,
+  type PromoStatusMode,
 } from "@/lib/payments/promo-client";
 import { SealedOfferComparison } from './sealed-offer-comparison';
 type Row = Record<string, unknown>;
@@ -116,14 +118,9 @@ export function WorkspaceView({
       .then((response) => response.json())
       .then((body) => {
         if (cancelled) return;
-        const mode = body?.data?.mode;
-        if (
-          mode === "blocked" ||
-          mode === "unavailable" ||
-          mode === "stripe_test" ||
-          mode === "mock"
-        ) {
-          setPromoCheckoutMode(mode);
+        const mode = body?.data?.mode as PromoStatusMode | undefined;
+        if (mode === "simulated" || mode === "test" || mode === "unavailable") {
+          setPromoCheckoutMode(promoCheckoutModeFromStatus(mode));
         } else {
           setPromoCheckoutMode("unavailable");
         }

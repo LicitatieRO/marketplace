@@ -4,6 +4,7 @@ import {
   promoCheckoutUserMessage,
   promoEnvironmentNote,
   promoPanelSimulationOnly,
+  promoCheckoutModeFromStatus,
   promoStatusPayload,
 } from '@/lib/payments/promo-client';
 
@@ -35,11 +36,17 @@ describe('promo client copy', () => {
     expect(promoEnvironmentNote('unavailable', t)).toMatch(/demonstrativă/);
   });
 
-  it('exposes status payload without provider details', () => {
-    expect(promoStatusPayload('unavailable')).toEqual({
-      mode: 'unavailable',
-      poc: true,
-      testMode: true,
-    });
+  it('exposes coarse status payload without provider details', () => {
+    expect(promoStatusPayload('mock')).toEqual({ mode: 'simulated' });
+    expect(promoStatusPayload('stripe_test')).toEqual({ mode: 'test' });
+    expect(promoStatusPayload('unavailable')).toEqual({ mode: 'unavailable' });
+    expect(promoStatusPayload('blocked')).toEqual({ mode: 'unavailable' });
+    expect(JSON.stringify(promoStatusPayload('mock'))).not.toMatch(/sk_|whsec|PAYMENTS|stripe_test|mock/);
+  });
+
+  it('maps public status back to checkout mode for the workspace UI', () => {
+    expect(promoCheckoutModeFromStatus('test')).toBe('stripe_test');
+    expect(promoCheckoutModeFromStatus('simulated')).toBe('mock');
+    expect(promoCheckoutModeFromStatus('unavailable')).toBe('unavailable');
   });
 });

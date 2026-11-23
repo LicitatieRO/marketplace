@@ -55,10 +55,16 @@ export function promoPanelSimulationOnly(mode: PromoCheckoutMode): boolean {
   return mode === 'blocked' || mode === 'unavailable';
 }
 
-export function promoStatusPayload(mode: PromoCheckoutMode) {
-  return {
-    mode,
-    poc: true,
-    testMode: true,
-  } as const;
+export type PromoStatusMode = 'simulated' | 'test' | 'unavailable';
+
+export function promoStatusPayload(mode: PromoCheckoutMode): { mode: PromoStatusMode } {
+  if (mode === 'stripe_test') return { mode: 'test' };
+  if (mode === 'mock') return { mode: 'simulated' };
+  return { mode: 'unavailable' };
+}
+
+export function promoCheckoutModeFromStatus(status: PromoStatusMode): PromoCheckoutMode {
+  if (status === 'test') return 'stripe_test';
+  if (status === 'simulated') return 'mock';
+  return 'unavailable';
 }

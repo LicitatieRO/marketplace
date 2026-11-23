@@ -2,13 +2,21 @@ import 'server-only';
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { RequestError } from '@/lib/security';
+import type { Language } from '@/lib/types';
+import {PublicValidationError,mapZodErrorToPublicValidation,publicValidationCodes,publicValidationMessage} from '@/lib/server/public-validation';
 export function json(data:unknown,status=200){return NextResponse.json(data,{status,headers:{'Cache-Control':'no-store'}});}
 export async function readJson(request:Request){
  if(!request.headers.get('content-type')?.includes('application/json')) throw new RequestError('JSON request body required.',415);
  const text=await request.text();if(text.length>32768)throw new RequestError('Request is too large.',413);
  try{return JSON.parse(text);}catch{throw new RequestError('Invalid JSON request.');}
 }
-export function failure(error:unknown){
+type FailureOptions={language?:Language};
+export function failure(error:unknown,options?:FailureOptions){
+ const language=options?.language??'en';
+ if(error instanceof PublicValidationError){
+  if(!(publicValidationCodes as readonly string[]).includes(error.code))return json({error:'Invalid request.'},400);
+  return json({error:publicValidationMessage(error.code,language)},error.status);
+ }
  if(error instanceof RequestError){
   const safeServiceMessages=new Set([
    'Authenticator verification is temporarily unavailable.',
@@ -35,7 +43,11 @@ export function failure(error:unknown){
   if (error.code) payload.code = error.code;
   return json(payload, error.status);
  }
- if(error instanceof ZodError)return json({error:'Invalid request.'},400);
+ if(error instanceof ZodError){
+  const mapped=mapZodErrorToPublicValidation(error);
+  if(mapped)return json({error:publicValidationMessage(mapped.code,language)},mapped.status);
+  return json({error:'Invalid request.'},400);
+ }
  console.error('Request failed');
  return json({error:'The request could not be completed. Please try again.'},500);
 }

@@ -46,24 +46,24 @@ function resolveLocalServiceCredentials() {
   return { supabaseUrl: apiUrl, serviceKey: roleKey };
 }
 
-function requireOutboxStack(t) {
+function failInCi(message) {
+  if (process.env.CI) {
+    assert.fail(message);
+  }
+}
+
+function requireOutboxStack() {
   if (process.env.APP_SENT_RECOVERY_ENABLED !== "true") {
-    const message =
-      "Recovery outbox integration requires APP_SENT_RECOVERY_ENABLED=true on the application server";
-    if (process.env.CI) {
-      assert.fail(message);
-    }
-    t.skip(message);
+    failInCi(
+      "Recovery outbox integration requires APP_SENT_RECOVERY_ENABLED=true on the application server",
+    );
     return null;
   }
   const creds = resolveLocalServiceCredentials();
   if (!creds || !process.env.E2E_PASSWORD) {
-    const message =
-      "Recovery outbox integration requires local Supabase service credentials and E2E_PASSWORD";
-    if (process.env.CI) {
-      assert.fail(message);
-    }
-    t.skip(message);
+    failInCi(
+      "Recovery outbox integration requires local Supabase service credentials and E2E_PASSWORD",
+    );
     return null;
   }
   return creds;
@@ -100,8 +100,8 @@ async function waitForRecoveryPreview(admin) {
   return null;
 }
 
-test("app-sent recovery stores a token_hash preview and the link opens reset mode", async (t) => {
-  const stack = requireOutboxStack(t);
+test("app-sent recovery stores a token_hash preview and the link opens reset mode", async () => {
+  const stack = requireOutboxStack();
   if (!stack) return;
 
   const origin = new URL(base).origin;

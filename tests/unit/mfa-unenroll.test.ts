@@ -15,6 +15,7 @@ function mockDb() {
   };
 }
 
+import { MFA_UNENROLL_STAFF_LAST_FACTOR_CODE } from '@/lib/mfa-unenroll-messages';
 import {
   MFA_UNENROLL_AAL,
   MFA_UNENROLL_BLOCKED,
@@ -70,7 +71,11 @@ describe('unenrollMfaFactor', () => {
         aal: 'aal2',
         isStaff: true,
       }),
-    ).rejects.toMatchObject({ message: MFA_UNENROLL_BLOCKED, status: 403 });
+    ).rejects.toMatchObject({
+      message: MFA_UNENROLL_BLOCKED,
+      status: 403,
+      code: MFA_UNENROLL_STAFF_LAST_FACTOR_CODE,
+    });
     expect(unenroll).not.toHaveBeenCalled();
   });
 

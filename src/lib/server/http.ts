@@ -26,7 +26,14 @@ export function failure(error:unknown){
    'Accounts require a configured Supabase backend. See the setup guide.',
    'Unable to sign out. Please retry.',
   ]);
-  return json({error:error.status>=500&&!safeServiceMessages.has(error.message)?'The request could not be completed. Please try again.':error.message},error.status);
+  const payload: { error: string; code?: string } = {
+    error:
+      error.status >= 500 && !safeServiceMessages.has(error.message)
+        ? 'The request could not be completed. Please try again.'
+        : error.message,
+  };
+  if (error.code) payload.code = error.code;
+  return json(payload, error.status);
  }
  if(error instanceof ZodError)return json({error:'Invalid request.'},400);
  console.error('Request failed');

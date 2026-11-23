@@ -6,6 +6,7 @@ import {
   warnMfaVerifyMissingClientIp,
 } from '@/lib/server/client-ip';
 import {
+  aalForMfaUnenroll,
   MFA_UNENROLL_SESSION_REFRESH,
   recordMfaFactorUnenrolledAudit,
   unenrollMfaFactor,
@@ -54,10 +55,10 @@ export async function POST(request: Request) {
       if (!input.factorId) {
         throw new RequestError('Authenticator factor required.');
       }
-      const [{ data: workspace, error: workspaceError }, { data: claims }] =
+      const [{ data: workspace, error: workspaceError }, claimsResult] =
         await Promise.all([db.rpc('get_workspace'), db.auth.getClaims()]);
       const isStaff = resolveIsStaffForMfaUnenroll(workspace, workspaceError);
-      const aal = String(claims?.claims?.aal || 'aal1');
+      const aal = aalForMfaUnenroll(claimsResult);
       const result = await unenrollMfaFactor(db, input.factorId, {
         aal,
         isStaff,

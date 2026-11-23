@@ -56,5 +56,3 @@ WHERE p.id = u.id
 Do not disable MFA requirements, paste service-role keys into the browser, or run grant SQL from CI/agents.
 
 Calling Supabase Auth `mfa.unenroll` directly (outside `/api/mfa`) bypasses the app’s staff last-factor guard but still requires an authenticated session and, for verified factors, AAL2—so it is self-DoS only (staff lose privileged access until they re-enroll).
-
-`mfa.factor_unenrolled` audit rows are written only from `/api/mfa` after a successful server-side unenroll, via the service-role RPC `audit_mfa_factor_unenrolled(p_user_id, p_factor_id)` (not callable by `authenticated`). A failed audit RPC is logged as `mfa.unenroll_audit_failed` and does not roll back the unenroll result.

@@ -27,41 +27,18 @@ import {
 import type { Listing } from "@/lib/types";
 import { listingDescription, listingTitle } from "@/lib/i18n";
 import { dateTime, money } from "@/lib/format";
-import {
-  useAllowsOptionalContent,
-} from "@/components/disclosures/cookie-consent-banner";
-import { openCookiePreferences } from "@/lib/optional-content-events";
 import { Feedback, useMutation, usePlatform } from "./platform";
+import { ListingTour360 } from "./listing-tour-360";
 import { AuctionCountdown, useAuctionCountdown } from "./auction-countdown";
 import { buildAccountSignInUrl } from "@/lib/security";
 export function ListingDetail({ listing }: { listing: Listing }) {
   const { language, t, configured, viewer, favorites, setFavoriteSaved } =
     usePlatform();
-  const allowsOptionalContent = useAllowsOptionalContent();
   const router = useRouter();
   const [gallery, setGallery] = useState<number | null>(null);
   const [tab, setTab] = useState<"message" | "viewing">("message");
   const clock = useAuctionCountdown(listing);
   const [viewingNow, setViewingNow] = useState(0);
-  const [tourOpen, setTourOpen] = useState(false);
-  const tourSource = (listing as Listing & { tour_url?: string | null })
-    .tour_url;
-  let safeTour: string | null = null;
-  try {
-    if (tourSource) {
-      const url = new URL(tourSource);
-      if (
-        url.protocol === "https:" &&
-        ((["kuula.co", "www.kuula.co"].includes(url.hostname) && url.pathname.startsWith("/share/")) ||
-          (url.hostname === "my.matterport.com" &&
-            url.pathname === "/show/" &&
-            Boolean(url.searchParams.get("m"))))
-      )
-        safeTour = url.toString();
-    }
-  } catch {
-    /* Invalid provider URLs are never embedded. */
-  }
   const saved = favorites.includes(listing.id);
   const [saveError, setSaveError] = useState("");
   const mutation = useMutation();
@@ -396,81 +373,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                 </p>
               </div>
             </div>
-            {safeTour ? (
-              <div className="virtual-tour">
-                <div className="tour-heading">
-                  <div>
-                    <h3>
-                      {t(
-                        "Privește în jur. De oriunde.",
-                        "Take a look around. From anywhere.",
-                      )}
-                    </h3>
-                    <p>
-                      {t(
-                        "Turul este găzduit de un furnizor extern. Se încarcă doar când îl deschizi și atunci partajează date de conexiune cu furnizorul.",
-                        "This tour is hosted by an external provider. It loads only when you open it, sharing connection data with that provider.",
-                      )}
-                    </p>
-                  </div>
-                  <button
-                    className="button secondary"
-                    onClick={() => {
-                      if (!allowsOptionalContent) {
-                        openCookiePreferences();
-                        return;
-                      }
-                      setTourOpen(!tourOpen);
-                    }}
-                  >
-                    {tourOpen
-                      ? t("Închide turul", "Close tour")
-                      : t("Deschide turul 360°", "Open 360° tour")}
-                    <Maximize2 size={15} />
-                  </button>
-                </div>
-                {tourOpen && allowsOptionalContent && (
-                  <iframe
-                    className="tour-embed"
-                    src={safeTour}
-                    title={t(
-                      "Tur virtual al proprietății",
-                      "Property virtual tour",
-                    )}
-                    loading="lazy"
-                    allow="fullscreen; accelerometer; gyroscope"
-                    allowFullScreen
-                    sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups"
-                    referrerPolicy="no-referrer"
-                  />
-                )}
-                <a
-                  className="text-link"
-                  href={safeTour}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(event) => {
-                    if (!allowsOptionalContent) {
-                      event.preventDefault();
-                      openCookiePreferences();
-                    }
-                  }}
-                >
-                  {t(
-                    "Deschide pe site-ul furnizorului",
-                    "Open on the provider’s website",
-                  )}
-                  <ArrowUpRight size={14} />
-                </a>
-              </div>
-            ) : (
-              <p className="muted small">
-                {t(
-                  "Tur virtual: nu a fost furnizat de proprietar.",
-                  "Virtual tour: not provided by the owner.",
-                )}
-              </p>
-            )}
+            <ListingTour360 tourUrl={listing.tour_url} />
           </section>
           <section className="detail-section contact-section" id="contact">
             <div className="eyebrow">

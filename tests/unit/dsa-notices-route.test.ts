@@ -75,4 +75,56 @@ describe('POST /api/dsa-notices', () => {
     expect(statement.en).toContain(`https://licitatiero.test/listings/${LISTING_ID}`);
     expect(statement.en).not.toContain('attacker.test');
   });
+
+  it('returns an allowlisted message when the explanation is too short', async () => {
+    const { POST } = await import('@/app/api/dsa-notices/route');
+    const response = await POST(
+      new Request('https://licitatiero.test/api/dsa-notices', {
+        method: 'POST',
+        headers: {
+          Origin: 'https://licitatiero.test',
+          'Content-Type': 'application/json',
+          'Accept-Language': 'en',
+        },
+        body: JSON.stringify({
+          listing_id: LISTING_ID,
+          element: 'description',
+          reason: 'fraud',
+          explanation: 'too short',
+          notifier_name: 'Alex Reporter',
+          notifier_email: 'alex@example.test',
+          good_faith: true,
+        }),
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: 'Your explanation must be at least 30 characters.',
+    });
+    expect(submitDsaNotice).not.toHaveBeenCalled();
+  });
+
+  it('returns an allowlisted message for an invalid notifier email', async () => {
+    const { POST } = await import('@/app/api/dsa-notices/route');
+    const response = await POST(
+      new Request('https://licitatiero.test/api/dsa-notices', {
+        method: 'POST',
+        headers: {
+          Origin: 'https://licitatiero.test',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          listing_id: LISTING_ID,
+          element: 'description',
+          reason: 'fraud',
+          explanation: 'The listing misstates ownership and requests advance payment off-platform.',
+          notifier_name: 'Alex Reporter',
+          notifier_email: 'not-an-email',
+          good_faith: true,
+        }),
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'Enter a valid email address.' });
+  });
 });

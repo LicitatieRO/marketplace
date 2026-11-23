@@ -137,6 +137,11 @@ export function localizedMessage(message: string, language: Language): string {
       "Închide anunțurile publicate, licitațiile active, ofertele deschise, rezervările, promovările sau sesizările legate de email înainte de a șterge contul.",
     "Type your account email or ȘTERGE / DELETE to confirm.":
       "Tastează adresa de email sau ȘTERGE / DELETE pentru confirmare.",
+    "Your explanation must be at least 30 characters.":
+      "Explicația trebuie să aibă cel puțin 30 de caractere.",
+    "Enter a valid email address.": "Introdu o adresă de email validă.",
+    "This required field is missing.": "Completează acest câmp obligatoriu.",
+    "Invalid request.": "Cerere invalidă.",
   };
   return messages[message] || message;
 }

@@ -1,6 +1,6 @@
 import 'server-only';
+import { RequestError } from '@/lib/security';
 import { configuredSiteOrigin } from '@/lib/server/app-origin';
-import { requestOrigin } from '@/lib/security';
 
 export function listingUrlForId(listingId: string, origin?: string): string {
   const base = (origin ?? process.env.APP_URL ?? 'http://localhost:3000').replace(/\/$/, '');
@@ -12,6 +12,10 @@ export function listingUrlForId(listingId: string, origin?: string): string {
 }
 
 export function listingUrlFromRequest(listingId: string, requestUrl: string): string {
-  const origin = configuredSiteOrigin() ?? requestOrigin(requestUrl);
+  void requestUrl;
+  const origin = configuredSiteOrigin();
+  if (!origin) {
+    throw new RequestError('APP_URL must be configured.', 503);
+  }
   return listingUrlForId(listingId, origin);
 }

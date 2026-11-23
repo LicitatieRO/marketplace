@@ -111,6 +111,38 @@ describe('rateLimitIpKeyMaterial', () => {
   });
 });
 
+describe('normalizeClientIp', () => {
+  it('maps IPv4-mapped IPv6 to the underlying IPv4 address', async () => {
+    vi.resetModules();
+    const { normalizeClientIp, rateLimitIpKeyMaterial } = await import('@/lib/server/client-ip');
+    expect(normalizeClientIp('::ffff:203.0.113.44')).toBe('203.0.113.44');
+    expect(rateLimitIpKeyMaterial('::ffff:203.0.113.44')).toBe('203.0.113.44');
+  });
+
+  it('strips IPv6 zone identifiers', async () => {
+    vi.resetModules();
+    const { normalizeClientIp } = await import('@/lib/server/client-ip');
+    expect(normalizeClientIp('fe80::1%eth0')).toBe('fe80::1');
+  });
+
+  it('accepts bracketed IPv6 literals with a port', async () => {
+    vi.resetModules();
+    const { normalizeClientIp, clientIpForMfaRateLimit } = await import('@/lib/server/client-ip');
+    expect(normalizeClientIp('[::1]:443')).toBe('::1');
+    vi.stubEnv('VERCEL', '1');
+    expect(
+      clientIpForMfaRateLimit(new Headers({ 'x-real-ip': '[::1]:443' })),
+    ).toBe('::1');
+  });
+
+  it('rejects IPv4 addresses with leading-zero octets', async () => {
+    vi.resetModules();
+    const { normalizeClientIp } = await import('@/lib/server/client-ip');
+    expect(normalizeClientIp('001.002.003.004')).toBeNull();
+    expect(normalizeClientIp('192.168.001.010')).toBeNull();
+  });
+});
+
 describe('clientIpForMfaRateLimit', () => {
   it('returns null when the trusted hop is not a valid IP', async () => {
     vi.resetModules();

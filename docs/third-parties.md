@@ -5,7 +5,7 @@ This matrix distinguishes a technical option from an established account or cont
 | Provider / capability | MVP boundary and action | Status / cost assumption |
 | --- | --- | --- |
 | GitHub | Three private organization repos; Team for private branch protections | Organization membership, plan and remote writes require observed verification |
-| Vercel | Separate staging/production projects under explicit team scope | Pro budget assumption; verify plan, region and team billing |
+| Vercel | Separate staging/production projects under explicit team scope | Verify plan, region and team billing |
 | Supabase | PostgreSQL/Auth/Storage in Frankfurt, RLS, backups/PITR | Separate refs/credentials; PITR before live funds; confirm plan/retention |
 | Resend | Outbox email after commit; retry/deduplicate | Verify sender domain SPF/DKIM and appropriate DMARC; account and deliverability unverified |
 | BCR / custodian | Manual commercial/legal discovery only | Custody/API suitability and agreement **not verified**; no live escrow claim |
@@ -13,7 +13,7 @@ This matrix distinguishes a technical option from an established account or cont
 | Kuula / Matterport | Embedded virtual tours via active commercial account/plan | Confirm embed branding, privacy/cookies and commercial SDK/plan permissions; generic embed support does not grant SDK rights |
 | OpenStreetMap (Leaflet tiles) | Catalogue map uses `https://tile.openstreetmap.org/{z}/{x}/{y}.png` by default (`NEXT_PUBLIC_MAP_TILE_URL` overrides must be **https** and use host `tile.openstreetmap.org` only unless `MAP_TILE_HOST_ALLOWLIST` in `src/lib/map-tiles.ts` is extended and documented here); attribution overrides must still credit OpenStreetMap (`…/copyright`); consent-gated before the first tile request; approximate pins only | No commercial tile contract claimed for this POC; follow [OSMF Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/) and attribution rules |
 | Protomaps PMTiles (offline fallback) | Dormant self-hosted extract `data/tiles/bucharest-ilfov.pmtiles` (Bucharest + Ilfov, z0–15), served at `/tiles/bucharest-ilfov.pmtiles` with HTTP Range; Git LFS; activated when `MAP_TILE_PROVIDER=pmtiles` or OSM failover; lazy-loaded client libs (`pmtiles`, `protomaps-leaflet`); same-origin path allowlisted in `src/lib/map-tiles.ts`; see [map-tile-fallback runbook](runbooks/map-tile-fallback.md) | OSM data via Protomaps daily planet build (ODbL); no Protomaps API key |
-| MapTiler | Optional maps with API-origin/key restrictions | US$30/month planning option, not required MVP cost or guaranteed current quotation; verify plan/usage |
+| MapTiler | Optional maps with API-origin/key restrictions | Not required for MVP; verify plan and usage |
 | ROeID | Possible owner identity verification research | Eligibility/integration approval **unverified**; identity does not prove ownership/title |
 | SmartBill / Oblio | Invoicing/e-Factura integration after accountant selects workflow | API/account/plan and current regulatory mapping pending accountant review |
 | FAN Courier / Sameday | Future goods logistics | Deferred; requires merchant contract and credentials, not relevant to current real-estate MVP |

@@ -5,6 +5,7 @@ import { isAccountDeleteConfirmationValid } from "@/lib/account-delete-confirmat
 import {
   accountDeleteBlockReason,
   ACCOUNT_DELETE_BLOCKED_MESSAGE,
+  ACCOUNT_DELETE_DSA_NOTICE_MESSAGE,
   ACCOUNT_DELETE_HAS_HISTORY_MESSAGE,
   ACCOUNT_DELETE_NOT_FOUND_MESSAGE,
   ACCOUNT_DELETE_STAFF_MESSAGE,
@@ -62,8 +63,11 @@ export async function POST(request: Request) {
       throw new RequestError(ACCOUNT_DELETE_STAFF_MESSAGE, 403);
     }
     if (blockReason === "has_history") {
-      // TODO(privacy-queue): enqueue founder review when table ships (#51 / #70).
+      // TODO(privacy-queue): enqueue founder review when table ships (#54 / #73).
       throw new RequestError(ACCOUNT_DELETE_HAS_HISTORY_MESSAGE, 409);
+    }
+    if (blockReason === "dsa_notices") {
+      throw new RequestError(ACCOUNT_DELETE_DSA_NOTICE_MESSAGE, 409);
     }
     if (blockReason) {
       throw new RequestError(ACCOUNT_DELETE_BLOCKED_MESSAGE, 409);

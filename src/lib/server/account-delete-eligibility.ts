@@ -9,10 +9,13 @@ export const ACCOUNT_DELETE_VIEWER_UNAVAILABLE_MESSAGE =
   'Account deletion is unavailable until your profile can be verified. Refresh and try again.';
 
 export const ACCOUNT_DELETE_BLOCKED_MESSAGE =
-  'Close your published listings, active auctions, open bids, reservations, promotions, or content reports linked to your email before deleting your account.';
+  'Close or complete your published listings, active auctions, bids in ongoing auctions, open reservations or pending promotions before deleting your account, or send a deletion request to the data-protection contact in our privacy notice.';
+
+export const ACCOUNT_DELETE_DSA_NOTICE_MESSAGE =
+  'You have submitted an illegal-content report with this email address, so your account is deleted by request rather than automatically. Send a deletion request to the data-protection contact in our privacy notice; we will reply within one month.';
 
 export const ACCOUNT_DELETE_HAS_HISTORY_MESSAGE =
-  'Your account cannot be deleted automatically because it has marketplace activity on record. Send a deletion request to the GDPR contact address in our privacy notice; we will respond within 30 calendar days. Data we must keep for legal reasons may be retained or anonymised instead of being erased.';
+  "Your account can't be deleted automatically because it has activity on record. Your right to erasure still applies: send a deletion request to the data-protection contact in our privacy notice. We will reply within one month and tell you what we erase, anonymise or keep, and why.";
 
 export const ACCOUNT_DELETE_NOT_FOUND_MESSAGE = 'Account not found.';
 

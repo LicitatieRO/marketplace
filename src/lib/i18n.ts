@@ -116,10 +116,12 @@ export function localizedMessage(message: string, language: Language): string {
       "Conturile de echipă nu pot fi șterse din această interfață.",
     "Account deletion is unavailable until your profile can be verified. Refresh and try again.":
       "Ștergerea contului nu este disponibilă până când profilul poate fi verificat. Reîncarcă pagina și încearcă din nou.",
-    "Close your published listings, active auctions, open bids, reservations, promotions, or content reports linked to your email before deleting your account.":
-      "Închide anunțurile publicate, licitațiile active, ofertele deschise, rezervările, promovările sau sesizările legate de email înainte de a șterge contul.",
-    "Your account cannot be deleted automatically because it has marketplace activity on record. Send a deletion request to the GDPR contact address in our privacy notice; we will respond within 30 calendar days. Data we must keep for legal reasons may be retained or anonymised instead of being erased.":
-      "Contul nu poate fi șters automat deoarece are activitate în marketplace înregistrată. Trimiteți o solicitare de ștergere la adresa GDPR din politica de confidențialitate; răspundem în cel mult 30 de zile calendaristice. Datele pe care legea ne obligă să le păstrăm pot fi reținute sau anonimizate în loc să fie șterse.",
+    "Close or complete your published listings, active auctions, bids in ongoing auctions, open reservations or pending promotions before deleting your account, or send a deletion request to the data-protection contact in our privacy notice.":
+      "Închideți sau finalizați anunțurile publicate, licitațiile active, ofertele din licitațiile în desfășurare, rezervările în curs sau promovările în așteptare înainte de a șterge contul, sau trimiteți o solicitare de ștergere la datele de contact pentru protecția datelor din politica de confidențialitate.",
+    "You have submitted an illegal-content report with this email address, so your account is deleted by request rather than automatically. Send a deletion request to the data-protection contact in our privacy notice; we will reply within one month.":
+      "Ați trimis o sesizare privind conținut ilegal folosind această adresă de email, așa că ștergerea contului se face prin solicitare, nu automat. Trimiteți o solicitare de ștergere la datele de contact pentru protecția datelor din politica de confidențialitate; vă răspundem în cel mult o lună.",
+    "Your account can't be deleted automatically because it has activity on record. Your right to erasure still applies: send a deletion request to the data-protection contact in our privacy notice. We will reply within one month and tell you what we erase, anonymise or keep, and why.":
+      "Contul nu poate fi șters automat deoarece are activitate înregistrată. Dreptul la ștergere se aplică în continuare: trimiteți o solicitare la datele de contact pentru protecția datelor din politica de confidențialitate. Vă răspundem în cel mult o lună și vă spunem ce ștergem, ce anonimizăm sau ce păstrăm și de ce.",
     "Account not found.":
       "Contul nu a fost găsit.",
     "Type your account email or ȘTERGE / DELETE to confirm.":

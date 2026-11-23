@@ -115,6 +115,22 @@ describe("POST /api/account/delete", () => {
     expect(deleteUser).not.toHaveBeenCalled();
   });
 
+  it("returns 409 for dsa_notices with deletion-by-request guidance", async () => {
+    accountDeleteBlockReason.mockResolvedValue("dsa_notices");
+    const { POST } = await import("@/app/api/account/delete/route");
+    const response = await POST(
+      deleteRequest({
+        confirm: true,
+        confirmation: "DELETE",
+      }),
+    );
+    const body = await response.json();
+    expect(response.status).toBe(409);
+    expect(body.error).toContain("illegal-content report");
+    expect(body.error).toContain("within one month");
+    expect(deleteUser).not.toHaveBeenCalled();
+  });
+
   it("returns 409 for has_history with GDPR email guidance", async () => {
     accountDeleteBlockReason.mockResolvedValue("has_history");
     const { POST } = await import("@/app/api/account/delete/route");
@@ -126,9 +142,9 @@ describe("POST /api/account/delete", () => {
     );
     const body = await response.json();
     expect(response.status).toBe(409);
-    expect(body.error).toContain("cannot be deleted automatically");
-    expect(body.error).toContain("GDPR contact address");
-    expect(body.error).toContain("30 calendar days");
+    expect(body.error).toContain("can't be deleted automatically");
+    expect(body.error).toContain("data-protection contact");
+    expect(body.error).toContain("within one month");
     expect(deleteUser).not.toHaveBeenCalled();
   });
 

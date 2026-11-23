@@ -42,17 +42,19 @@ test.describe("bid confirm and catalogue auction row", () => {
     await page.getByLabel("Parola", { exact: true }).fill(process.env.E2E_PASSWORD!);
     await page.getByRole("button", { name: "Intră în cont", exact: true }).click();
     await page.goto(`/listings/${listing.id}`);
+    await expect(page.getByTestId("auction-countdown")).toHaveAttribute(
+      "data-phase",
+      "live",
+    );
+    await expect(page.getByTestId("listing-place-bid")).toBeVisible();
     const minimum =
       (listing.current_bid_minor ?? listing.starting_price_minor ?? 0) +
       (listing.min_increment_minor ?? 0);
     const amount = (minimum + 10_000) / 100;
-    await page.getByLabel("Oferta ta în EUR").fill(String(amount));
+    await page.getByTestId("listing-bid-amount").fill(String(amount));
     await page.getByTestId("listing-place-bid").click();
     await expect(page.getByTestId("listing-bid-confirm-panel")).toBeVisible();
-    await page
-      .getByTestId("listing-bid-confirm-panel")
-      .getByRole("button", { name: "Anulează", exact: true })
-      .click();
+    await page.getByTestId("listing-bid-confirm-cancel").click();
     await expect(page.getByTestId("listing-bid-confirm-panel")).toHaveCount(0);
     await expect(
       page.locator(".feedback.success").filter({ hasText: "înregistrată" }),

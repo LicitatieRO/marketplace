@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -341,6 +342,7 @@ export function Feedback({
 }
 export function useMutation() {
   const { t, language } = usePlatform();
+  const inFlightRef = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -353,6 +355,8 @@ export function useMutation() {
     payload: Record<string, unknown>,
     success?: string,
   ) {
+    if (inFlightRef.current) return false;
+    inFlightRef.current = true;
     setBusy(true);
     setError("");
     setMessage("");
@@ -401,6 +405,7 @@ export function useMutation() {
       );
       return false;
     } finally {
+      inFlightRef.current = false;
       setBusy(false);
     }
   }

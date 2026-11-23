@@ -31,6 +31,7 @@ import {
   legalOfferFineprint,
   legalSimulationScopeNote,
 } from "@/lib/bid-copy";
+import { placeBidAmountMinor } from "@/lib/bid-confirm-amount";
 import { listingDescription, listingTitle } from "@/lib/i18n";
 import { dateTime, money } from "@/lib/format";
 import {
@@ -140,13 +141,15 @@ export function ListingDetail({ listing }: { listing: Listing }) {
       ? listing.current_bid_minor + (listing.min_increment_minor || 0)
       : listing.starting_price_minor || listing.price_minor;
   const submitBid = async () => {
-    if (confirmAmountMinor === null || !listing.auction_id) return;
+    if (!listing.auction_id) return;
+    const amountMinor = placeBidAmountMinor(confirmAmountMinor);
+    if (amountMinor === null) return;
     if (
       await mutation.mutate(
         "place_bid",
         {
           p_auction_id: listing.auction_id,
-          p_amount_minor: confirmAmountMinor,
+          p_amount_minor: amountMinor,
         },
         bidTerms.bidRecordedSimulation,
       )
@@ -670,11 +673,13 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                     className="stack-form"
                     onSubmit={(event) => event.preventDefault()}
                   >
-                    <label>
+                    <label htmlFor="listing-bid-amount">
                       {bidTerms.yourOfferEur}
                       <div className="currency-input">
                         <input
+                          id="listing-bid-amount"
                           name="amount"
+                          data-testid="listing-bid-amount"
                           type="number"
                           step="0.01"
                           min={
@@ -683,11 +688,17 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                               : 0.01
                           }
                           required
+                          disabled={confirmAmountMinor !== null || mutation.busy}
                           placeholder={
                             listing.auction_mode === "ascending"
                               ? String(minimum / 100)
                               : "0"
                           }
+                          onChange={() => {
+                            if (confirmAmountMinor !== null) {
+                              setConfirmAmountMinor(null);
+                            }
+                          }}
                         />
                         <span>EUR</span>
                       </div>
@@ -696,7 +707,9 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                       <button
                         type="button"
                         className="button primary"
-                        disabled={mutation.busy}
+                        disabled={
+                          confirmAmountMinor !== null || mutation.busy
+                        }
                         data-testid="listing-place-bid"
                         onClick={(event) => {
                           const form = event.currentTarget.form;
@@ -721,7 +734,9 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                       <button
                         type="button"
                         className="button primary"
-                        disabled={mutation.busy}
+                        disabled={
+                          confirmAmountMinor !== null || mutation.busy
+                        }
                         data-testid="listing-place-bid"
                         onClick={(event) => {
                           const form = event.currentTarget.form;

@@ -195,11 +195,14 @@ test("buyer bids, messages, views, saves, and confirms a simulated reservation",
     .click();
   await expect(page).toHaveURL(/workspace/);
   await page.goto(`/listings/${listing.id}`);
-  await page.getByLabel("Oferta ta în EUR").fill("100100");
-  await page
-    .getByTestId("listing-place-bid")
-    .click();
-  await page.getByTestId("listing-bid-confirm-confirm").click();
+  await expect(page.getByTestId("auction-countdown")).toHaveAttribute(
+    "data-phase",
+    "live",
+  );
+  await expect(page.getByTestId("listing-place-bid")).toBeVisible();
+  await page.getByTestId("listing-bid-amount").fill("100100");
+  await page.getByTestId("listing-place-bid").click();
+  await page.getByTestId("listing-bid-confirm").click();
   await expect(
     page
       .locator(".feedback.success")

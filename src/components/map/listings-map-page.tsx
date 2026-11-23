@@ -22,6 +22,7 @@ import {
   type MapBbox as QueryMapBbox,
 } from "@/lib/map-bounds-query";
 import type { MapListing } from "@/lib/map-listing-types";
+import { placeBidAmountMinor } from "@/lib/bid-confirm-amount";
 import {
   bidGlossary,
   legalMapPageTitle,
@@ -366,13 +367,15 @@ export function ListingsMapPage() {
   }, []);
 
   const submitBid = async () => {
-    if (!selected || bidMinor === null || confirmAmount === null) return;
+    if (!selected || confirmAmount === null) return;
     if (!selected.auctionId) return;
+    const amountMinor = placeBidAmountMinor(confirmAmount, bidMinor);
+    if (amountMinor === null) return;
     const ok = await mutation.mutate(
       "place_bid",
       {
         p_auction_id: selected.auctionId,
-        p_amount_minor: bidMinor,
+        p_amount_minor: amountMinor,
       },
       bidTerms.bidRecordedSimulation,
     );
@@ -491,16 +494,26 @@ export function ListingsMapPage() {
             min={minimumBid / 100}
             step={selected.minIncrementCents / 100}
             value={bidMinor !== null ? bidMinor / 100 : ""}
-            onChange={(e) =>
-              setBidMinor(Math.round(Number(e.target.value) * 100))
-            }
+            disabled={confirmAmount !== null || mutation.busy}
+            onChange={(e) => {
+              if (confirmAmount !== null) setConfirmAmount(null);
+              setBidMinor(Math.round(Number(e.target.value) * 100));
+            }}
           />
           <button
             type="button"
             className="button primary"
             data-testid="map-place-bid"
-            disabled={bidMinor === null || bidMinor < minimumBid}
-            onClick={() => setConfirmAmount(bidMinor)}
+            disabled={
+              confirmAmount !== null ||
+              mutation.busy ||
+              bidMinor === null ||
+              bidMinor < minimumBid
+            }
+            onClick={() => {
+              if (bidMinor === null) return;
+              setConfirmAmount(bidMinor);
+            }}
           >
             {bidTerms.placeBid}
           </button>

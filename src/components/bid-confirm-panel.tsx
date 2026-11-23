@@ -41,13 +41,18 @@ export function BidConfirmPanel({
           ref={confirmButtonRef}
           type="button"
           className="button primary"
-          data-testid={`${testId.replace(/-panel$/, "")}-confirm`}
+          data-testid={testId.replace(/-panel$/, "") || "bid-confirm"}
           disabled={busy}
           onClick={onConfirm}
         >
           {glossary.confirmBid}
         </button>
-        <button type="button" className="button" onClick={onCancel}>
+        <button
+          type="button"
+          className="button"
+          data-testid={`${(testId.replace(/-panel$/, "") || "bid-confirm")}-cancel`}
+          onClick={onCancel}
+        >
           {glossary.cancel}
         </button>
       </div>

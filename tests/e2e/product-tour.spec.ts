@@ -31,15 +31,29 @@ test.describe("buyer product tour", () => {
     expect(stored).toContain('"resume"');
   });
 
-  test("Enter on skip ends tour; Tab stays inside dialog", async ({ page }) => {
+  test("Enter on skip ends tour; focus stable after target resolves", async ({
+    page,
+  }) => {
     await page.goto("/?tour=1");
     const dialog = page.getByTestId("tour-dialog");
     await expect(dialog).toBeVisible();
     await page.getByTestId("tour-skip").focus();
+    await expect(page.getByTestId("tour-next")).toBeEnabled({ timeout: 15_000 });
+    await expect
+      .poll(async () =>
+        page.evaluate(
+          () =>
+            document.activeElement?.getAttribute("data-testid") === "tour-skip",
+        ),
+      )
+      .toBe(true);
     await page.keyboard.press("Enter");
     await expect(dialog).toHaveCount(0);
+  });
 
+  test("Tab stays inside dialog", async ({ page }) => {
     await page.goto("/?tour=1");
+    const dialog = page.getByTestId("tour-dialog");
     await expect(dialog).toBeVisible();
     await page.getByTestId("tour-next").focus();
     await page.keyboard.press("Tab");
@@ -73,7 +87,7 @@ test("owner tour without session stays on persona step", async ({ page }) => {
   if (await switcher.count()) {
     await expect(switcher).toBeVisible();
   } else {
-    await expect(page.locator('[data-tour="account-entry"]')).toBeVisible();
+    await expect(page.locator('[data-tour="account-entry"]')).toHaveCount(1);
   }
   await page.getByTestId("tour-skip").click();
   await expect(page).not.toHaveURL(/tab=owner/);

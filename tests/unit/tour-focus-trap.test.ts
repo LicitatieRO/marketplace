@@ -1,22 +1,24 @@
-import { describe, expect, it } from "vitest";
-import { shouldTourEnterAdvanceNext } from "@/lib/tour/focus-trap";
+import { describe, expect, it, vi } from "vitest";
+import { handleTourDialogTabKey } from "@/lib/tour/focus-trap";
 
 describe("tour focus trap helpers", () => {
-  it("only treats Enter on dialog or Next as advance", () => {
-    const dialog = { dataset: {} } as unknown as HTMLElement;
-    const skip = { dataset: { testid: "tour-skip" } } as unknown as HTMLElement;
-    const next = { dataset: { testid: "tour-next" } } as unknown as HTMLElement;
-
-    const skipEvent = {
-      key: "Enter",
-      target: skip,
+  it("wraps Tab forward at the last focusable", () => {
+    const first = { focus: vi.fn(), offsetParent: {} } as unknown as HTMLElement;
+    const last = { focus: vi.fn(), offsetParent: {} } as unknown as HTMLElement;
+    const container = {
+      querySelectorAll: () => [first, last],
+    } as unknown as HTMLElement;
+    vi.stubGlobal("document", {
+      activeElement: last,
+    });
+    const event = {
+      key: "Tab",
+      shiftKey: false,
+      preventDefault: vi.fn(),
     } as unknown as KeyboardEvent;
-    expect(shouldTourEnterAdvanceNext(skipEvent, dialog)).toBe(false);
-
-    const nextEvent = { key: "Enter", target: next } as unknown as KeyboardEvent;
-    expect(shouldTourEnterAdvanceNext(nextEvent, dialog)).toBe(true);
-
-    const dialogEvent = { key: "Enter", target: dialog } as unknown as KeyboardEvent;
-    expect(shouldTourEnterAdvanceNext(dialogEvent, dialog)).toBe(true);
+    handleTourDialogTabKey(event, container);
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(first.focus).toHaveBeenCalled();
+    vi.unstubAllGlobals();
   });
 });

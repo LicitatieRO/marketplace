@@ -38,10 +38,7 @@ import {
   setTourResume,
 } from "@/lib/tour/storage";
 import type { TourKind, TourStepDefinition, TourStepPlacement } from "@/lib/tour/types";
-import {
-  handleTourDialogTabKey,
-  shouldTourEnterAdvanceNext,
-} from "@/lib/tour/focus-trap";
+import { handleTourDialogTabKey } from "@/lib/tour/focus-trap";
 import { selectorForTourTarget, waitForTarget } from "@/lib/tour/wait-for-target";
 
 type SpotlightRect = {
@@ -174,6 +171,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const navKeyRef = useRef<string | null>(null);
   const liveRef = useRef<HTMLDivElement>(null);
+  const stepInitialFocusRef = useRef<number | null>(null);
 
   const refreshStorage = useCallback(() => {
     setStorage(readTourStorage());
@@ -391,14 +389,19 @@ export function TourProvider({ children }: { children: ReactNode }) {
   }, [advanceStep, pathname, running, state.targetMissing, step]);
 
   useLayoutEffect(() => {
-    if (!running) return;
+    if (!running) {
+      stepInitialFocusRef.current = null;
+      return;
+    }
+    if (stepInitialFocusRef.current === state.stepIndex) return;
+    stepInitialFocusRef.current = state.stepIndex;
     const next = nextRef.current;
     if (next && !next.disabled) {
       next.focus();
       return;
     }
     dialogRef.current?.focus();
-  }, [running, state.stepIndex, targetRect, state.targetMissing, waiting]);
+  }, [running, state.stepIndex]);
 
   const onPrimary = useCallback(() => {
     if (!step) return;
@@ -431,13 +434,6 @@ export function TourProvider({ children }: { children: ReactNode }) {
       if (event.key === "Escape") {
         event.preventDefault();
         endTour();
-        return;
-      }
-      if (event.key === "Enter") {
-        if (shouldTourEnterAdvanceNext(event, dialog)) {
-          event.preventDefault();
-          onPrimary();
-        }
         return;
       }
       if (event.key === "ArrowRight") {

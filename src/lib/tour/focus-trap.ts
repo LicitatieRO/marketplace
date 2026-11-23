@@ -18,7 +18,7 @@ export function handleTourDialogTabKey(
     return;
   }
   const active = document.activeElement;
-  const currentIndex = active instanceof HTMLElement ? nodes.indexOf(active) : -1;
+  const currentIndex = nodes.findIndex((node) => node === active);
   if (event.shiftKey) {
     if (currentIndex <= 0) {
       event.preventDefault();
@@ -28,15 +28,4 @@ export function handleTourDialogTabKey(
     event.preventDefault();
     nodes[0]?.focus();
   }
-}
-
-export function shouldTourEnterAdvanceNext(
-  event: KeyboardEvent,
-  dialog: HTMLElement | null,
-): boolean {
-  if (event.key !== "Enter" || !dialog) return false;
-  const target = event.target as HTMLElement | null;
-  if (!target) return false;
-  if (target === dialog) return true;
-  return target.dataset?.testid === "tour-next";
 }

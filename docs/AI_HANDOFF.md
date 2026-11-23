@@ -37,7 +37,7 @@ Mode remains **POC / Simulare**. Live deposits, wallets, and paid plans stay OFF
 | --- | --- |
 | Staging Supabase | The staging Supabase project (Frankfurt). Agents must **never** apply migrations to hosted Supabase. |
 | Production app | Not deployed yet. First prod cutover is [marketplace#111](https://github.com/LicitatieRO/marketplace/issues/111), **blocked on Florentin**. |
-| Vercel | Team slug `licitatie-ro`, Hobby ($0/mo). Staging project `licitatiero-staging`; production project `licitatiero-production`. No Git auto-deploy. See [delivery.md](delivery.md) for env names. |
+| Vercel | Team slug `licitatie-ro`, Hobby tier (POC). Staging project `licitatiero-staging`; production project `licitatiero-production`. No Git auto-deploy. See [delivery.md](delivery.md) for env names. |
 | GitHub org | `LicitatieRO`; repos stay private. Canonical source is GitHub. |
 
 Earlier handoff notes about “migrations not yet pushed” to staging may be stale after later deploys; confirm hosted schema against `main` before assuming drift. Do not run `supabase db push` or MCP `apply_migration` against hosted projects.
@@ -108,7 +108,7 @@ GitHub is canonical application source.
 - Product: Romanian auction marketplace; first pilot is Bucharest property. The founder expects around 12 sale/rental listings. Local seed data represents six physical properties with separate sale and rent listings.
 - Languages: Romanian default, English available; responsive mobile interface, light/dark theme.
 - Start with free listings and optional paid promotion. Agency plans later. Promotion monetization is a validation plan, not a completed billing integration.
-- Six-month cash ceiling: EUR10,000, including marketing and hosting; protect EUR3,000 reserve. Founder labor and existing AI subscriptions are excluded from cash calculations. The founder welcomes lower costs.
+- Operating budget and capital constraints are maintained privately by the founder and are not part of this repository.
 - One physical property can generate separate sale and rental listings. Only one auction per property at a time. Public ascending bids and confidential offers are separate from public/invitation access rules.
 - Owner approval is required for reservations. Deposits are simulated and refundable before separate signing.
 - Live money requires an approved independent bank, legal or regulated custody partner, agreements, refunds and reconciliation. Stripe delayed payouts alone are not escrow. No live deposits, wallet or financial guarantees are enabled.
@@ -124,7 +124,7 @@ GitHub is canonical application source.
 - Database transactions, property/actor row locks, database time after locks, idempotency payload validation, shared-property restrictions, RLS and restricted RPC grants. Private offer amounts, exact addresses and messages require explicit authorization. Public map pins use persisted `public_lat` / `public_lng`, not raw coordinates.
 - HttpOnly/SameSite session cookies, Origin checks for mutations, input validation; elevated worker key stays server-side. Photo upload re-encodes images and strips EXIF, with size limits.
 - Consent-gated Kuula/Matterport tour embeds. Transactional notification outbox with claims/leases/ack/retry and Resend worker; protected cron route. Staging founder outbox with server-side action-link masking and audited reveal (#103). Real provider email delivery is pending.
-- Founder economics calculator, ADR/ARD, six-month marketing/cloud budget model, integration requirements and launch gaps.
+- Founder economics calculator, ADR/ARD, integration requirements and launch gaps.
 - Dockerfile with non-root standalone application runtime; local Supabase scripts; GitHub quality and “Database and browser integration” CI; staging and manual production workflows with exact-tested-SHA verification, forward migrations and health smoke.
 
 ## Source map

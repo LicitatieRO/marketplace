@@ -31,6 +31,8 @@ import {
   AccountSwitcher,
   readDualGuestView,
 } from "@/components/account-switcher";
+import { TourHeaderMenu, TourMobileNav } from "@/components/tour/tour-header-menu";
+import { TourShell } from "@/components/tour/tour-shell";
 type Theme = "system" | "light" | "dark";
 type Platform = {
   language: Language;
@@ -51,6 +53,7 @@ export function usePlatform() {
   if (!value) throw new Error("Platform provider missing");
   return value;
 }
+
 export function PlatformProvider({
   children,
   configured,
@@ -159,6 +162,7 @@ export function PlatformProvider({
         setCatalogueMapPath,
       }}
     >
+      <TourShell>
       <a className="skip-link" href="#main">
         {t("Sari la conținut", "Skip to content")}
       </a>
@@ -181,7 +185,11 @@ export function PlatformProvider({
           >
             <Link href="/">{t("Descoperă locuințe", "Find a home")}</Link>
             <Link href="/saved-searches">{t("Căutări salvate", "Saved searches")}</Link>
-            <Link href={catalogueMapPath} data-testid="nav-map-link">
+            <Link
+              href={catalogueMapPath}
+              data-testid="nav-map-link"
+              data-tour="nav-map"
+            >
               {t("Hartă", "Map")}
             </Link>
             <Link href="/workspace?tab=owner">
@@ -190,6 +198,7 @@ export function PlatformProvider({
             </Link>
           </nav>
           <div className="header-actions">
+            <TourHeaderMenu />
             <button
               className="locale-button"
               onClick={toggleLanguage}
@@ -219,6 +228,7 @@ export function PlatformProvider({
             <Link
               className="account-button"
               href={effectiveViewer ? "/workspace" : "/account"}
+              data-tour="account-entry"
             >
               {effectiveViewer
                 ? t("Spațiul meu", "My workspace")
@@ -237,12 +247,14 @@ export function PlatformProvider({
         </div>
         {menu && (
           <nav className="mobile-navigation">
+            <TourMobileNav onNavigate={() => setMenu(false)} />
             <Link href="/" onClick={() => setMenu(false)}>
               {t("Descoperă locuințe", "Find a home")}
             </Link>
             <Link
               href={catalogueMapPath}
               data-testid="nav-map-link-mobile"
+              data-tour="nav-map"
               onClick={() => setMenu(false)}
             >
               {t("Hartă", "Map")}
@@ -318,6 +330,7 @@ export function PlatformProvider({
           </span>
         </div>
       </footer>
+      </TourShell>
     </Context.Provider>
   );
 }

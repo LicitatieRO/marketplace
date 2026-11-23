@@ -414,7 +414,7 @@ export function ListingsMapPage() {
           ({t("zonă aproximativă", "approximate area")})
         </span>
       </p>
-      <div className="lr-map-card-bid">
+      <div className="lr-map-card-bid" data-tour="map-card-bid">
         <strong>{money(selected.currentBidCents, language)}</strong>
         <span className="chip poc">POC / Simulare</span>
       </div>
@@ -663,7 +663,7 @@ export function ListingsMapPage() {
             })
           )}
         </aside>
-        <section className="listings-map-map">
+        <section className="listings-map-map" data-tour="map-surface">
           <button
             type="button"
             className="listings-map-mobile-toggle"

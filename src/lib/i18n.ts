@@ -1,6 +1,41 @@
 import type { Language, Listing } from "./types";
 export const translate = (language: Language, ro: string, en: string) =>
   language === "ro" ? ro : en;
+
+export const tourUi = {
+  takeTour: ["Fă turul", "Take the tour"] as const,
+  takeTourMinute: ["Fă turul · 1 min", "Take the tour · 1 min"] as const,
+  tourBuyerMenu: ["Tur cumpărător", "Buyer tour"] as const,
+  tourOwnerMenu: ["Tur proprietar", "Owner tour"] as const,
+  resumeTour: (current: number, total: number) =>
+    [
+      `Continuă turul (${current} / ${total})`,
+      `Resume tour (${current} / ${total})`,
+    ] as const,
+  skipTour: ["Sari peste", "Skip"] as const,
+  skipStep: ["Sari pasul", "Skip step"] as const,
+  closeTour: ["Închide", "Close"] as const,
+  back: ["Înapoi", "Back"] as const,
+  next: ["Înainte", "Next"] as const,
+  done: ["Gata", "Done"] as const,
+  progress: (current: number, total: number) =>
+    [`${current} / ${total}`, `${current} / ${total}`] as const,
+  progressLive: (current: number, total: number, title: string) =>
+    [
+      `Pasul ${current} din ${total}: ${title}`,
+      `Step ${current} of ${total}: ${title}`,
+    ] as const,
+  requiredHint: ["Atinge butonul evidențiat", "Tap the highlighted control"] as const,
+  targetMissing: [
+    "Elementul nu e disponibil — Sari pasul",
+    "This element isn't available — skip step",
+  ] as const,
+  dontShowAgain: ["Nu mai arăta", "Don't show again"] as const,
+  autoOffer: ["Fă turul în 1 minut?", "Take the 1-minute tour?"] as const,
+  ownerHandoff: ["Continuă cu turul proprietarului", "Continue with the owner tour"] as const,
+  ownerDoneToast: ["Tur încheiat", "Tour complete"] as const,
+  loadingStep: ["Se încarcă pasul…", "Loading step…"] as const,
+};
 export function listingTitle(listing: Listing, language: Language) {
   if (language === "ro" || !listing.property_id.startsWith("10000000-"))
     return listing.title;

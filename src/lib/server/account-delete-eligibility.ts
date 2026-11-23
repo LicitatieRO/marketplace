@@ -11,9 +11,6 @@ export const ACCOUNT_DELETE_VIEWER_UNAVAILABLE_MESSAGE =
 export const ACCOUNT_DELETE_BLOCKED_MESSAGE =
   'Close or complete your published listings, active auctions, bids in ongoing auctions, open reservations or pending promotions before deleting your account, or send a deletion request to the data-protection contact in our privacy notice.';
 
-export const ACCOUNT_DELETE_DSA_NOTICE_MESSAGE =
-  'You have submitted an illegal-content report with this email address, so your account is deleted by request rather than automatically. Send a deletion request to the data-protection contact in our privacy notice; we will reply within one month.';
-
 export const ACCOUNT_DELETE_HAS_HISTORY_MESSAGE =
   "Your account can't be deleted automatically because it has activity on record. Your right to erasure still applies: send a deletion request to the data-protection contact in our privacy notice. We will reply within one month and tell you what we erase, anonymise or keep, and why.";
 
@@ -27,7 +24,6 @@ export type AccountDeleteBlockReason =
   | 'open_bids'
   | 'open_reservations'
   | 'open_promotions'
-  | 'dsa_notices'
   | 'has_history';
 
 /** Returns null when hard deletion may proceed; otherwise the blocking reason. */

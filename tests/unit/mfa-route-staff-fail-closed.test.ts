@@ -5,10 +5,15 @@ vi.mock('server-only', () => ({}));
 const unenrollMfaFactor = vi.fn();
 const resolveIsStaffForMfaUnenrollMock = vi.fn();
 
-vi.mock('@/lib/server/mfa-unenroll', () => ({
-  unenrollMfaFactor,
-  MFA_UNENROLL_SESSION_REFRESH: 'Sign in again.',
-}));
+vi.mock('@/lib/server/mfa-unenroll', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/server/mfa-unenroll')>();
+  return {
+    ...actual,
+    unenrollMfaFactor,
+    recordMfaFactorUnenrolledAudit: vi.fn(),
+    MFA_UNENROLL_SESSION_REFRESH: 'Sign in again.',
+  };
+});
 
 vi.mock('@/lib/server/mfa-staff-guard', () => ({
   resolveIsStaffForMfaUnenroll: (...args: unknown[]) =>
@@ -22,7 +27,12 @@ vi.mock('@/lib/server/auth', () => ({
       email_confirmed_at: new Date().toISOString(),
     },
     db: {
-      auth: { getClaims: async () => ({ data: { claims: { aal: 'aal2' } } }) },
+      auth: {
+        getClaims: async () => ({
+          data: { claims: { aal: 'aal2' } },
+          error: null,
+        }),
+      },
       rpc: async (name: string) => {
         if (name === 'get_workspace') {
           return { data: null, error: { message: 'rpc down' } };

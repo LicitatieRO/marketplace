@@ -1,6 +1,6 @@
 BEGIN;
 SET search_path = public, extensions;
-SELECT plan(35);
+SELECT plan(38);
 
 SELECT ok(
   has_function_privilege('service_role', 'public.account_delete_eligibility(uuid)', 'EXECUTE'),
@@ -29,6 +29,18 @@ SELECT ok(
 SELECT ok(
   NOT has_function_privilege('authenticated', 'app.account_delete_non_cascade_user_fks()', 'EXECUTE'),
   'authenticated cannot call account delete non-cascade FK helper'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.account_delete_release_invites(uuid)', 'EXECUTE'),
+  'service_role may call public account delete release invites'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.account_delete_release_invites(uuid)', 'EXECUTE'),
+  'anon cannot call public account delete release invites'
+);
+SELECT ok(
+  NOT has_function_privilege('authenticated', 'public.account_delete_release_invites(uuid)', 'EXECUTE'),
+  'authenticated cannot call public account delete release invites'
 );
 SELECT ok(
   has_function_privilege('service_role', 'app.account_delete_release_invites(uuid)', 'EXECUTE'),
@@ -751,6 +763,11 @@ SELECT is(
 );
 RESET ROLE;
 
+UPDATE app.property_promos
+SET status = 'cancelled'
+WHERE owner_id = current_setting('test.blocker_user')::uuid
+  AND status = 'pending';
+
 INSERT INTO app.auction_members (
   auction_id,
   user_id,
@@ -807,6 +824,11 @@ RESET ROLE;
 DELETE FROM app.notification_outbox
 WHERE user_id = current_setting('test.notify_user')::uuid;
 
+UPDATE app.listings
+SET status = 'closed'
+WHERE id = 'a1690103-0000-4000-8000-000000000010'
+  AND owner_id = current_setting('test.auction_owner')::uuid;
+
 INSERT INTO app.auction_members (
   auction_id,
   user_id,
@@ -834,16 +856,90 @@ SELECT is(
 );
 RESET ROLE;
 
+INSERT INTO app.properties (
+  id,
+  owner_id,
+  title,
+  description,
+  neighborhood,
+  exact_address,
+  property_type,
+  area_sqm,
+  rooms,
+  floor,
+  built_year,
+  judet
+) VALUES (
+  'a1690112-0000-4000-8000-000000000060',
+  current_setting('test.auction_owner')::uuid,
+  'Open bid membership fixture',
+  'Dedicated active auction for bidder plus membership coverage.',
+  'Aviației',
+  '7 Fixture Street',
+  'apartment',
+  58,
+  3,
+  8,
+  2012,
+  'București'
+);
+
+INSERT INTO app.listings (
+  id,
+  property_id,
+  owner_id,
+  transaction_type,
+  price_minor,
+  status
+) VALUES (
+  'a1690113-0000-4000-8000-000000000060',
+  'a1690112-0000-4000-8000-000000000060',
+  current_setting('test.auction_owner')::uuid,
+  'sale',
+  32000000,
+  'closed'
+);
+
+INSERT INTO app.auctions (
+  id,
+  property_id,
+  listing_id,
+  owner_id,
+  mode,
+  access,
+  starts_at,
+  ends_at,
+  status,
+  starting_price_minor,
+  min_increment_minor
+) VALUES (
+  'a1690114-0000-4000-8000-000000000060',
+  'a1690112-0000-4000-8000-000000000060',
+  'a1690113-0000-4000-8000-000000000060',
+  current_setting('test.auction_owner')::uuid,
+  'ascending',
+  'public',
+  clock_timestamp() - interval '1 hour',
+  clock_timestamp() + interval '1 day',
+  'active',
+  1000000,
+  10000
+);
+
+UPDATE app.listings
+SET auction_id = 'a1690114-0000-4000-8000-000000000060'
+WHERE id = 'a1690113-0000-4000-8000-000000000060';
+
 INSERT INTO app.bids (
   auction_id,
   bidder_id,
   amount_minor,
   idempotency_key
 ) VALUES (
-  'a1690109-0000-4000-8000-000000000030',
+  'a1690114-0000-4000-8000-000000000060',
   current_setting('test.blocker_user')::uuid,
   1150000,
-  'a1690111-0000-4000-8000-000000000030'
+  'a1690111-0000-4000-8000-000000000060'
 );
 
 INSERT INTO app.auction_members (
@@ -851,11 +947,10 @@ INSERT INTO app.auction_members (
   user_id,
   invited_by
 ) VALUES (
-  'a1690109-0000-4000-8000-000000000030',
+  'a1690114-0000-4000-8000-000000000060',
   current_setting('test.blocker_user')::uuid,
   current_setting('test.auction_owner')::uuid
-)
-ON CONFLICT DO NOTHING;
+);
 
 SET LOCAL ROLE service_role;
 SELECT is(
@@ -879,7 +974,7 @@ SELECT ok(
     SELECT 1
     FROM app.auction_members
     WHERE user_id = current_setting('test.blocker_user')::uuid
-      AND auction_id = 'a1690109-0000-4000-8000-000000000030'
+      AND auction_id = 'a1690114-0000-4000-8000-000000000060'
   ),
   'membership with bids remains after release invites'
 );

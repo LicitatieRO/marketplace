@@ -8,7 +8,7 @@ export function PocSiteBanner() {
       className="demo-banner"
       role="status"
       data-testid="poc-simulation-banner"
-      data-tour="poc-simulation"
+      data-tour="poc-banner"
     >
       <span className="status-dot" />
       <div>

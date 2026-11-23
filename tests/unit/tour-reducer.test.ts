@@ -1,64 +1,65 @@
 import { describe, expect, it } from "vitest";
-import {
-  initialTourState,
-  tourReducer,
-} from "@/lib/tour/reducer";
-import { ACTIVE_TOUR_STEPS } from "@/lib/tour/steps";
+import { initialTourState, tourReducer } from "@/lib/tour/reducer";
+import { BUYER_TOUR_STEPS, OWNER_TOUR_STEPS } from "@/lib/tour/steps";
 
-const steps = ACTIVE_TOUR_STEPS;
-
-describe("product tour reducer", () => {
-  it("starts at the requested step", () => {
-    const next = tourReducer(initialTourState, { type: "START" }, steps);
-    expect(next.status).toBe("running");
-    expect(next.stepIndex).toBe(0);
-    expect(next.resumeOffer).toBe(false);
-  });
-
-  it("advances on next and completes on the last step", () => {
-    let state = tourReducer(initialTourState, { type: "START" }, steps);
-    for (let index = 0; index < steps.length - 1; index += 1) {
-      state = tourReducer(state, { type: "NEXT" }, steps);
-      expect(state.stepIndex).toBe(index + 1);
-    }
-    state = tourReducer(state, { type: "NEXT" }, steps);
-    expect(state.status).toBe("completed");
-    expect(state.stepIndex).toBe(steps.length - 1);
-  });
-
-  it("moves back when not on the first step", () => {
-    let state = tourReducer(initialTourState, { type: "START" }, steps);
-    state = tourReducer(state, { type: "NEXT" }, steps);
-    state = tourReducer(state, { type: "BACK" }, steps);
-    expect(state.stepIndex).toBe(0);
-    state = tourReducer(state, { type: "BACK" }, steps);
-    expect(state.stepIndex).toBe(0);
-  });
-
-  it("skips and offers resume when mid-tour", () => {
-    let state = tourReducer(initialTourState, { type: "START" }, steps);
-    state = tourReducer(state, { type: "NEXT" }, steps);
-    state = tourReducer(state, { type: "SKIP" }, steps);
-    expect(state.status).toBe("idle");
-    expect(state.stepIndex).toBe(1);
-    expect(state.resumeOffer).toBe(true);
-  });
-
-  it("hydrates resume offer from persistence", () => {
-    const state = tourReducer(
+describe("tourReducer", () => {
+  it("starts buyer and owner tours", () => {
+    const buyer = tourReducer(
       initialTourState,
-      { type: "HYDRATE_RESUME", stepIndex: 2 },
-      steps,
+      { type: "START", tour: "buyer" },
+      BUYER_TOUR_STEPS,
     );
-    expect(state.status).toBe("idle");
-    expect(state.stepIndex).toBe(2);
-    expect(state.resumeOffer).toBe(true);
+    expect(buyer.status).toBe("running");
+    expect(buyer.tour).toBe("buyer");
+    expect(buyer.stepIndex).toBe(0);
+
+    const owner = tourReducer(
+      initialTourState,
+      { type: "START", tour: "owner" },
+      OWNER_TOUR_STEPS,
+    );
+    expect(owner.tour).toBe("owner");
   });
 
-  it("skips missing-selector steps like next", () => {
-    let state = tourReducer(initialTourState, { type: "START" }, steps);
-    state = tourReducer(state, { type: "SKIP_STEP_MISSING" }, steps);
-    expect(state.status).toBe("running");
+  it("advances, goes back, and completes", () => {
+    let state = tourReducer(
+      initialTourState,
+      { type: "START", tour: "buyer" },
+      BUYER_TOUR_STEPS,
+    );
+    state = tourReducer(state, { type: "NEXT" }, BUYER_TOUR_STEPS);
+    expect(state.stepIndex).toBe(1);
+    state = tourReducer(state, { type: "BACK" }, BUYER_TOUR_STEPS);
+    expect(state.stepIndex).toBe(0);
+    for (let i = 0; i < BUYER_TOUR_STEPS.length - 1; i += 1) {
+      state = tourReducer(state, { type: "NEXT" }, BUYER_TOUR_STEPS);
+    }
+    state = tourReducer(state, { type: "DONE" }, BUYER_TOUR_STEPS);
+    expect(state.status).toBe("completed");
+  });
+
+  it("marks target missing without advancing", () => {
+    let state = tourReducer(
+      initialTourState,
+      { type: "START", tour: "buyer" },
+      BUYER_TOUR_STEPS,
+    );
+    state = tourReducer(state, { type: "TARGET_MISSING" }, BUYER_TOUR_STEPS);
+    expect(state.targetMissing).toBe(true);
+    expect(state.stepIndex).toBe(0);
+  });
+
+  it("skips to idle and tracks dont-show", () => {
+    let state = tourReducer(
+      initialTourState,
+      { type: "START", tour: "buyer" },
+      BUYER_TOUR_STEPS,
+    );
+    state = tourReducer(state, { type: "SET_DONT_SHOW", value: true }, BUYER_TOUR_STEPS);
+    state = tourReducer(state, { type: "NEXT" }, BUYER_TOUR_STEPS);
+    state = tourReducer(state, { type: "SKIP" }, BUYER_TOUR_STEPS);
+    expect(state.status).toBe("idle");
+    expect(state.dontShowAgain).toBe(true);
     expect(state.stepIndex).toBe(1);
   });
 });

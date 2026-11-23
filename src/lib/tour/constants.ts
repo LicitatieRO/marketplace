@@ -1,0 +1,9 @@
+export const TOUR_DEMO_LISTING_ID = "20000000-0000-4000-8000-000000000001";
+
+export const TOUR_MAP_LISTING_ROUTE = `/map?listing=${TOUR_DEMO_LISTING_ID}`;
+export const TOUR_LISTING_ROUTE = `/listings/${TOUR_DEMO_LISTING_ID}`;
+
+export const TOUR_MOBILE_MAX_WIDTH = 767;
+export const TOUR_HEADER_MENU_MIN_WIDTH = 1024;
+export const TOUR_TARGET_WAIT_MS = 4_000;
+export const TOUR_AUTO_PROMPT_MS = 4_000;

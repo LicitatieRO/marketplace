@@ -4,21 +4,58 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("licitatiero-language", "ro");
     localStorage.setItem("licitatiero-theme", "light");
-    localStorage.removeItem("licitatiero-product-tour");
+    localStorage.setItem("licitatiero-optional-content", "rejected");
+    localStorage.removeItem("licitatiero-tour");
   });
 });
 
-test("starts from ?tour=1, advances one step, then skips", async ({ page }) => {
-  await page.goto("/?tour=1");
+test.describe("buyer product tour", () => {
+  test("desktop ?tour=1 walks B1→B2 then skips", async ({ page }) => {
+    await page.goto("/?tour=1");
+    const dialog = page.getByTestId("tour-dialog");
+    await expect(dialog).toBeVisible();
+    await expect(page).not.toHaveURL(/tour=/);
+    await expect(dialog.getByRole("heading", { level: 2 })).toContainText(
+      "Bun venit",
+    );
+    await dialog.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(dialog.getByRole("heading", { level: 2 })).toContainText(
+      "simulare",
+    );
+    await page.getByTestId("tour-skip").click();
+    await expect(dialog).toHaveCount(0);
+    const stored = await page.evaluate(() =>
+      localStorage.getItem("licitatiero-tour"),
+    );
+    expect(stored).toContain('"resume"');
+  });
+
+  test("mobile 375px uses bottom sheet", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/?tour=buyer");
+    const dialog = page.getByTestId("tour-dialog");
+    await expect(dialog).toHaveClass(/tour-dialog--sheet/);
+    await page.getByTestId("tour-next").click();
+    await expect(dialog).toBeVisible();
+    await page.getByTestId("tour-close").click();
+    await expect(dialog).toHaveCount(0);
+  });
+});
+
+test("owner tour without session stays on persona step", async ({ page }) => {
+  await page.goto("/?tour=owner");
   const dialog = page.getByTestId("tour-dialog");
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("heading", { level: 2 })).toContainText(
-    "Bine ai venit",
+    /proprietar/i,
   );
-  await page.getByTestId("tour-next").click();
-  await expect(dialog.getByRole("heading", { level: 2 })).toContainText(
-    "Caută și filtrează",
-  );
+  const switcher = page.getByTestId("poc-account-switcher");
+  if (await switcher.count()) {
+    await expect(switcher).toBeVisible();
+  } else {
+    await expect(page.locator('[data-tour="account-entry"]')).toBeVisible();
+  }
   await page.getByTestId("tour-skip").click();
-  await expect(dialog).toHaveCount(0);
+  await expect(page).not.toHaveURL(/tab=owner/);
 });

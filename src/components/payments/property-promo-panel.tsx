@@ -74,7 +74,11 @@ export function PropertyPromoPanel({
   }
 
   return (
-    <section className="promo-panel" aria-labelledby={`promo-${propertyId}`}>
+    <section
+      className="promo-panel"
+      data-tour="promo-panel"
+      aria-labelledby={`promo-${propertyId}`}
+    >
       <p className="promo-eyebrow">TEST MODE / MOD TEST · POC / Simulare</p>
       <h4 id={`promo-${propertyId}`}>
         {t(

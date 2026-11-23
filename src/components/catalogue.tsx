@@ -15,10 +15,11 @@ import {
   Search,
   SlidersHorizontal,
   Square,
+  Compass,
   X,
 } from "lucide-react";
 import type { Listing, TransactionType } from "@/lib/types";
-import { listingTitle } from "@/lib/i18n";
+import { listingTitle, tourUi } from "@/lib/i18n";
 import { money } from "@/lib/format";
 import { buildMapPathFromCatalogueFilters } from "@/lib/catalogue-map-path";
 import { useProductTour } from "@/components/tour/tour-context";
@@ -34,7 +35,7 @@ const CatalogueMap = dynamic(
 
 export function Catalogue({ listings }: { listings: Listing[] }) {
   const { t, language, setCatalogueMapPath } = usePlatform();
-  const { startTour, takeTourLabel } = useProductTour();
+  const { startTour } = useProductTour();
   const [transaction, setTransaction] = useState<TransactionType>("sale");
   const [query, setQuery] = useState("");
   const [neighborhood, setNeighborhood] = useState("");
@@ -114,7 +115,7 @@ export function Catalogue({ listings }: { listings: Listing[] }) {
   };
   return (
     <main id="main">
-      <section className="hero page-width" data-tour="catalogue-hero">
+      <section className="hero page-width" data-tour="hero">
         <div className="hero-content">
           <div className="eyebrow">
             <span className="tiny-line" />
@@ -136,11 +137,12 @@ export function Catalogue({ listings }: { listings: Listing[] }) {
           </p>
           <button
             type="button"
-            className="button primary tour-home-button"
+            className="button tour-hero-pill"
             data-testid="tour-start-home"
-            onClick={() => startTour(0)}
+            onClick={() => startTour("buyer", 0)}
           >
-            {takeTourLabel}
+            <Compass size={16} aria-hidden />
+            {t(...tourUi.takeTourMinute)}
           </button>
         </div>
         <div className="hero-aside">

@@ -13,25 +13,32 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { usePlatform } from "@/components/platform";
 import { tourUi, translate } from "@/lib/i18n";
+import { TOUR_MOBILE_MAX_WIDTH } from "@/lib/tour/constants";
+import { hasOwnerTourSession } from "@/lib/tour/owner-session";
 import {
   initialTourState,
-  persistenceFromTourState,
   tourReducer,
   type TourState,
 } from "@/lib/tour/reducer";
-import { TOUR_START_EVENT } from "@/lib/tour/events";
-import { ACTIVE_TOUR_STEPS } from "@/lib/tour/steps";
+import { bodyForStep, buildTargetSelectors } from "@/lib/tour/resolve-targets";
 import {
-  TOUR_VERSION,
-  clearTourPersistence,
-  readTourPersistence,
-  writeTourPersistence,
+  BUYER_TOUR_STEPS,
+  OWNER_TOUR_STEPS,
+  stepsForTour,
+} from "@/lib/tour/steps";
+import {
+  clearTourResume,
+  markTourCompleted,
+  mergeTourStorage,
+  readTourStorage,
+  setTourResume,
 } from "@/lib/tour/storage";
-import type { TourStepDefinition, TourStepPlacement } from "@/lib/tour/types";
-import { waitForSelector } from "@/lib/tour/wait-for-selector";
+import type { TourKind, TourStepDefinition, TourStepPlacement } from "@/lib/tour/types";
+import { selectorForTourTarget, waitForTarget } from "@/lib/tour/wait-for-target";
 
 type SpotlightRect = {
   top: number;
@@ -41,12 +48,12 @@ type SpotlightRect = {
 };
 
 type TourContextValue = {
-  startTour: (fromStep?: number) => void;
+  startTour: (tour: TourKind, stepIndex?: number) => void;
   resumeTour: () => void;
-  state: TourState;
-  resumeOffer: boolean;
-  takeTourLabel: string;
-  resumeTourLabel: string;
+  forceOff: () => void;
+  storage: ReturnType<typeof readTourStorage>;
+  entryLabel: string;
+  running: boolean;
 };
 
 const TourContext = createContext<TourContextValue | null>(null);
@@ -57,20 +64,47 @@ export function useProductTour() {
   return ctx;
 }
 
-function placementStyle(
+function currentLocationPath(): string {
+  if (typeof window === "undefined") return "/";
+  return `${window.location.pathname}${window.location.search}`;
+}
+
+function routeMatches(stepRoute: string | undefined, location: string): boolean {
+  if (!stepRoute) return true;
+  const [stepPath, stepQuery] = stepRoute.split("?");
+  const [locPath, locQuery = ""] = location.split("?");
+  if (stepPath !== locPath) return false;
+  if (!stepQuery) return true;
+  const want = new URLSearchParams(stepQuery);
+  const have = new URLSearchParams(locQuery);
+  for (const [key, value] of want.entries()) {
+    if (have.get(key) !== value) return false;
+  }
+  return true;
+}
+
+function placementForStep(
+  step: TourStepDefinition,
+  mobile: boolean,
+): TourStepPlacement | "sheet" {
+  if (mobile && step.mobilePlacement) return step.mobilePlacement;
+  if (!mobile && step.desktopPlacement) return step.desktopPlacement;
+  return step.placement;
+}
+
+function desktopTooltipStyle(
   placement: TourStepPlacement,
   rect: SpotlightRect,
-  dialogWidth: number,
-  dialogHeight: number,
-): { top: number; left: number } {
+): React.CSSProperties {
   const margin = 12;
+  const dialogWidth = 320;
+  const dialogHeight = 200;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   let top = rect.top + rect.height + margin;
   let left = rect.left;
   if (placement === "top") {
     top = rect.top - dialogHeight - margin;
-    left = rect.left;
   } else if (placement === "left") {
     top = rect.top;
     left = rect.left - dialogWidth - margin;
@@ -78,154 +112,252 @@ function placementStyle(
     top = rect.top;
     left = rect.left + rect.width + margin;
   } else if (placement === "center") {
-    return { top: vh / 2 - dialogHeight / 2, left: vw / 2 - dialogWidth / 2 };
+    top = vh / 2 - dialogHeight / 2;
+    left = vw / 2 - dialogWidth / 2;
+    return { top, left };
   }
   left = Math.min(Math.max(8, left), vw - dialogWidth - 8);
   top = Math.min(Math.max(8, top), vh - dialogHeight - 8);
+  if (top + dialogHeight > vh - 8) {
+    top = Math.max(8, vh / 2 - dialogHeight / 2);
+    left = vw / 2 - dialogWidth / 2;
+  }
   return { top, left };
 }
 
-function syncPersistence(state: TourState) {
-  const persisted = persistenceFromTourState(state, ACTIVE_TOUR_STEPS);
-  if (!persisted) {
-    clearTourPersistence();
-    return;
-  }
-  writeTourPersistence({
-    version: TOUR_VERSION,
-    stepIndex: persisted.stepIndex,
-    inProgress: persisted.inProgress,
-  });
+function clipPathForRect(rect: SpotlightRect | null): string | undefined {
+  if (!rect) return undefined;
+  const pad = 6;
+  const t = Math.max(0, rect.top - pad);
+  const l = Math.max(0, rect.left - pad);
+  const r = l + rect.width + pad * 2;
+  const b = t + rect.height + pad * 2;
+  return `polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, ${l}px ${t}px, ${r}px ${t}px, ${r}px ${b}px, ${l}px ${b}px, ${l}px ${t}px)`;
 }
 
 export function TourProvider({ children }: { children: ReactNode }) {
-  const { language, t } = usePlatform();
+  const { language, t, viewer } = usePlatform();
   const router = useRouter();
   const pathname = usePathname();
-  const steps = ACTIVE_TOUR_STEPS;
+  const mounted = typeof window !== "undefined";
+  const [storage, setStorage] = useState(() => readTourStorage());
   const [state, dispatch] = useReducer(
-    (prev: TourState, action: Parameters<typeof tourReducer>[1]) =>
-      tourReducer(prev, action, steps),
+    (prev: TourState, action: Parameters<typeof tourReducer>[1]) => {
+      const tour =
+        action.type === "START"
+          ? action.tour
+          : action.type === "RESUME"
+            ? action.tour
+            : prev.tour;
+      return tourReducer(prev, action, stepsForTour(tour));
+    },
     initialTourState,
   );
-  const [targetRect, setTargetRect] = useState<SpotlightRect | null>(null);
-  const [waiting, setWaiting] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const returnFocusRef = useRef<HTMLElement | null>(null);
-  const navigatedRef = useRef<string | null>(null);
-  const step: TourStepDefinition | undefined = steps[state.stepIndex];
+  const steps = useMemo(() => stepsForTour(state.tour), [state.tour]);
+  const step = steps[state.stepIndex];
   const running = state.status === "running";
   const total = steps.length;
   const isFirst = state.stepIndex <= 0;
   const isLast = state.stepIndex >= total - 1;
+  const [targetRect, setTargetRect] = useState<SpotlightRect | null>(null);
+  const [waiting, setWaiting] = useState(false);
+  const [mobile, setMobile] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const navKeyRef = useRef<string | null>(null);
+  const liveRef = useRef<HTMLDivElement>(null);
 
-  const labels = useMemo(
-    () => ({
-      next: translate(language, ...tourUi.nextStep),
-      back: translate(language, ...tourUi.prevStep),
-      skip: translate(language, ...tourUi.skipTour),
-      close: translate(language, ...tourUi.closeTour),
-      resume: translate(language, ...tourUi.resumeTour),
-      take: translate(language, ...tourUi.takeTour),
-    }),
-    [language],
-  );
-
-  const startTour = useCallback((fromStep = 0) => {
-    returnFocusRef.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    dispatch({ type: "START", stepIndex: fromStep });
+  const refreshStorage = useCallback(() => {
+    setStorage(readTourStorage());
   }, []);
 
+  const stripTourQuery = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("tour")) return;
+    url.searchParams.delete("tour");
+    const next = `${url.pathname}${url.search}${url.hash}`;
+    router.replace(next);
+  }, [router]);
+
+  const persistSkip = useCallback(() => {
+    if (state.status !== "running") return;
+    const saved = setTourResume(state.tour, state.stepIndex);
+    setStorage(saved);
+    refreshStorage();
+    if (state.dontShowAgain) {
+      const dismissed = mergeTourStorage({ dismissed: true });
+      setStorage(dismissed);
+      refreshStorage();
+    }
+  }, [refreshStorage, state.dontShowAgain, state.status, state.stepIndex, state.tour]);
+
+  const persistDone = useCallback(() => {
+    const saved = markTourCompleted(state.tour);
+    setStorage(saved);
+    refreshStorage();
+    if (state.tour === "owner") {
+      setToast(translate(language, ...tourUi.ownerDoneToast));
+      window.setTimeout(() => setToast(null), 2500);
+    }
+  }, [language, refreshStorage, state.tour]);
+
+  const startTour = useCallback(
+    (tour: TourKind, stepIndex = 0) => {
+      returnFocusRef.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+      clearTourResume();
+      refreshStorage();
+      dispatch({ type: "START", tour, stepIndex });
+    },
+    [refreshStorage],
+  );
+
   const resumeTour = useCallback(() => {
-    startTour(state.stepIndex);
-  }, [startTour, state.stepIndex]);
+    const saved = readTourStorage();
+    if (!saved.resume) return;
+    dispatch({
+      type: "RESUME",
+      tour: saved.resume.tour,
+      stepIndex: saved.resume.step,
+    });
+  }, []);
 
   const endTour = useCallback(() => {
+    persistSkip();
     dispatch({ type: "SKIP" });
     setTargetRect(null);
     returnFocusRef.current?.focus();
-  }, []);
+    stripTourQuery();
+  }, [persistSkip, stripTourQuery]);
 
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const apply = () => setReducedMotion(mq.matches);
-    apply();
-    mq.addEventListener("change", apply);
-    return () => mq.removeEventListener("change", apply);
-  }, []);
+  const finishTour = useCallback(() => {
+    persistDone();
+    dispatch({ type: "DONE" });
+    setTargetRect(null);
+    returnFocusRef.current?.focus();
+    stripTourQuery();
+  }, [persistDone, stripTourQuery]);
 
-  useEffect(() => {
-    const saved = readTourPersistence();
-    if (saved?.inProgress && saved.stepIndex > 0) {
-      dispatch({ type: "HYDRATE_RESUME", stepIndex: saved.stepIndex });
+  const entryLabel = useMemo(() => {
+    const resume = storage.resume;
+    if (resume) {
+      const totalFor = resume.tour === "buyer" ? BUYER_TOUR_STEPS.length : OWNER_TOUR_STEPS.length;
+      return translate(language, ...tourUi.resumeTour(resume.step + 1, totalFor));
     }
-  }, []);
+    return translate(language, ...tourUi.takeTour);
+  }, [language, storage.resume]);
 
   useEffect(() => {
-    syncPersistence(state);
-  }, [state]);
-
-  const measureTarget = useCallback((element: Element) => {
-    const box = element.getBoundingClientRect();
-    setTargetRect({
-      top: box.top,
-      left: box.left,
-      width: box.width,
-      height: box.height,
-    });
+    const mqMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mqMobile = window.matchMedia(`(max-width: ${TOUR_MOBILE_MAX_WIDTH}px)`);
+    const apply = () => {
+      setReducedMotion(mqMotion.matches);
+      setMobile(mqMobile.matches);
+    };
+    apply();
+    mqMotion.addEventListener("change", apply);
+    mqMobile.addEventListener("change", apply);
+    return () => {
+      mqMotion.removeEventListener("change", apply);
+      mqMobile.removeEventListener("change", apply);
+    };
   }, []);
 
+  const measureTarget = useCallback(
+    (element: Element) => {
+      const scrollBehavior = reducedMotion ? "auto" : "smooth";
+      element.scrollIntoView({ block: "center", behavior: scrollBehavior });
+      const measure = () => {
+        const box = element.getBoundingClientRect();
+        setTargetRect({
+          top: box.top,
+          left: box.left,
+          width: box.width,
+          height: box.height,
+        });
+      };
+      if (reducedMotion) measure();
+      else window.requestAnimationFrame(measure);
+    },
+    [reducedMotion],
+  );
+
+  const advanceStep = useCallback(() => {
+    if (isLast) finishTour();
+    else dispatch({ type: "NEXT" });
+  }, [finishTour, isLast]);
+
   useEffect(() => {
-    let cancelled = false;
     if (!running || !step) {
       startTransition(() => {
-        if (cancelled) return;
         setTargetRect(null);
         setWaiting(false);
       });
-      return () => {
-        cancelled = true;
-      };
+      return;
     }
-    startTransition(() => {
-      if (!cancelled) setWaiting(true);
-    });
-  void (async () => {
-      const desiredRoute = step.route;
-      if (desiredRoute && pathname !== desiredRoute) {
-        const navKey = `${desiredRoute}:${state.stepIndex}`;
-        if (navigatedRef.current !== navKey) {
-          navigatedRef.current = navKey;
-          router.push(desiredRoute);
+    let cancelled = false;
+    startTransition(() => setWaiting(true));
+
+    void (async () => {
+      if (step.requiresOwnerSession && !hasOwnerTourSession(viewer)) {
+        if (state.stepIndex > 0) {
+          dispatch({ type: "RESUME", tour: "owner", stepIndex: 0 });
+          return;
+        }
+      }
+
+      const location = currentLocationPath();
+      if (step.route && !routeMatches(step.route, location)) {
+        const navKey = `${step.route}:${state.stepIndex}`;
+        if (navKeyRef.current !== navKey) {
+          navKeyRef.current = navKey;
+          router.push(step.route);
           return;
         }
       } else {
-        navigatedRef.current = null;
+        navKeyRef.current = null;
       }
-      const result = await waitForSelector(step.selector);
+
+      const selectors = buildTargetSelectors(step, pathname);
+      const result = await waitForTarget(selectors);
       if (cancelled) return;
       startTransition(() => setWaiting(false));
       if (!result.ok) {
-        dispatch({ type: "SKIP_STEP_MISSING" });
+        dispatch({ type: "TARGET_MISSING" });
+        setTargetRect(null);
         return;
       }
+      dispatch({ type: "TARGET_FOUND" });
       measureTarget(result.element);
     })();
+
     return () => {
       cancelled = true;
     };
-  }, [running, step, pathname, router, state.stepIndex, measureTarget]);
+  }, [
+    running,
+    step,
+    pathname,
+    router,
+    state.stepIndex,
+    viewer,
+    measureTarget,
+  ]);
 
   useEffect(() => {
-    if (!running) return;
+    if (!running || !step || state.targetMissing) return;
+    const selectors = buildTargetSelectors(step, pathname);
     const onResize = () => {
-      if (!step) return;
-      const el = document.querySelector(step.selector);
-      if (el) measureTarget(el);
+      for (const sel of selectors) {
+        const el = document.querySelector(selectorForTourTarget(sel));
+        if (el) measureTarget(el);
+      }
     };
     window.addEventListener("resize", onResize);
     window.addEventListener("scroll", onResize, true);
@@ -233,132 +365,202 @@ export function TourProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("resize", onResize);
       window.removeEventListener("scroll", onResize, true);
     };
-  }, [running, step, measureTarget]);
+  }, [running, step, pathname, state.targetMissing, measureTarget]);
 
   useEffect(() => {
-    const onStart = () => startTour(0);
-    window.addEventListener(TOUR_START_EVENT, onStart);
-    return () => window.removeEventListener(TOUR_START_EVENT, onStart);
-  }, [startTour]);
+    if (!running || !step || step.action !== "required" || state.targetMissing) {
+      return;
+    }
+    const selectors = buildTargetSelectors(step, pathname);
+    let cleaned: (() => void) | null = null;
+    void waitForTarget(selectors).then((result) => {
+      if (!result.ok) return;
+      const el = result.element;
+      const onActivate = () => {
+        window.setTimeout(() => advanceStep(), 80);
+      };
+      el.addEventListener("click", onActivate, { capture: true });
+      cleaned = () => el.removeEventListener("click", onActivate, { capture: true });
+    });
+    return () => cleaned?.();
+  }, [advanceStep, pathname, running, state.targetMissing, step]);
 
   useLayoutEffect(() => {
-    if (!running || !dialogRef.current) return;
-    dialogRef.current.focus();
-  }, [running, state.stepIndex, targetRect]);
+    if (!running) return;
+    titleRef.current?.focus();
+  }, [running, state.stepIndex, targetRect, state.targetMissing]);
+
+  const onPrimary = useCallback(() => {
+    if (!step) return;
+    if (state.targetMissing) {
+      advanceStep();
+      return;
+    }
+    if (step.action === "required" && step.advanceRoute) {
+      router.push(step.advanceRoute);
+      return;
+    }
+    advanceStep();
+  }, [advanceStep, router, state.targetMissing, step]);
 
   useEffect(() => {
     if (!running) return;
     const onKeyDown = (event: KeyboardEvent) => {
+      const tag = (event.target as HTMLElement).tagName;
+      if (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT"
+      ) {
+        return;
+      }
       if (event.key === "Escape") {
         event.preventDefault();
         endTour();
+        return;
+      }
+      if (event.key === "ArrowRight" || event.key === "Enter") {
+        event.preventDefault();
+        onPrimary();
+        return;
+      }
+      if (event.key === "ArrowLeft" && !isFirst) {
+        event.preventDefault();
+        dispatch({ type: "BACK" });
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [running, endTour]);
+  }, [dispatch, endTour, isFirst, onPrimary, running]);
 
-  const dialogPosition =
-    targetRect && step
-      ? placementStyle(step.placement, targetRect, 320, 220)
-      : { top: 80, left: 24 };
+  useEffect(() => {
+    if (!running || !step) return;
+    const title = t(step.titleRo, step.titleEn);
+    if (liveRef.current) {
+      liveRef.current.textContent = translate(
+        language,
+        ...tourUi.progressLive(state.stepIndex + 1, total, title),
+      );
+    }
+  }, [language, running, state.stepIndex, step, t, total]);
+
+  const sheetMode =
+    mobile && step && placementForStep(step, true) === "sheet" && !state.targetMissing;
+  const centeredMissing = state.targetMissing;
+  const placement =
+    step && !centeredMissing
+      ? placementForStep(step, mobile)
+      : ("center" as const);
+
+  const forceOff = useCallback(() => {
+    dispatch({ type: "FORCE_IDLE" });
+    setTargetRect(null);
+  }, []);
 
   const contextValue: TourContextValue = {
     startTour,
     resumeTour,
-    state,
-    resumeOffer: state.resumeOffer && state.status === "idle",
-    takeTourLabel: labels.take,
-    resumeTourLabel: labels.resume,
+    forceOff,
+    storage,
+    entryLabel,
+    running,
   };
 
-  return (
-    <TourContext.Provider value={contextValue}>
-      {children}
-      {state.resumeOffer && state.status === "idle" ? (
-        <div className="tour-resume-banner page-width" role="status">
-          <button
-            type="button"
-            className="button primary"
-            data-testid="tour-resume"
-            onClick={resumeTour}
-          >
-            {labels.resume}
-          </button>
-          <button
-            type="button"
-            className="text-button"
-            data-testid="tour-dismiss-resume"
-            onClick={() => dispatch({ type: "DISMISS_RESUME" })}
-          >
-            {labels.close}
-          </button>
-        </div>
-      ) : null}
-      {running && step ? (
+  const overlay =
+    mounted && running && step ? (
+      <div
+        className={`tour-root${reducedMotion ? " tour-root--static" : ""}`}
+        data-testid="product-tour-root"
+      >
         <div
-          className={`tour-root${reducedMotion ? " tour-root--static" : ""}`}
-          data-testid="product-tour-root"
-        >
-          <div className="tour-backdrop" aria-hidden="true" onClick={endTour} />
-          {targetRect ? (
-            <div
-              className="tour-spotlight"
-              style={{
-                top: targetRect.top - 6,
-                left: targetRect.left - 6,
-                width: targetRect.width + 12,
-                height: targetRect.height + 12,
-              }}
-              aria-hidden="true"
-            />
-          ) : null}
+          className="tour-backdrop"
+          style={{ clipPath: centeredMissing ? undefined : clipPathForRect(targetRect) }}
+          aria-hidden="true"
+          onClick={endTour}
+        />
+        {targetRect && !centeredMissing ? (
           <div
-            ref={dialogRef}
-            className="tour-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="tour-dialog-title"
-            aria-describedby="tour-dialog-body"
-            tabIndex={-1}
-            data-testid="tour-dialog"
+            className="tour-spotlight"
             style={{
-              top: dialogPosition.top,
-              left: dialogPosition.left,
+              top: targetRect.top - 6,
+              left: targetRect.left - 6,
+              width: targetRect.width + 12,
+              height: targetRect.height + 12,
             }}
-            onKeyDown={(event) => {
-              if (event.key === "ArrowRight" || event.key === "Enter") {
-                event.preventDefault();
-                if (isLast) endTour();
-                else dispatch({ type: "NEXT" });
-              } else if (event.key === "ArrowLeft" && !isFirst) {
-                event.preventDefault();
-                dispatch({ type: "BACK" });
-              }
-            }}
-          >
-            <p className="tour-step-label" id="tour-dialog-step">
-              {translate(
-                language,
-                ...tourUi.stepOf(state.stepIndex + 1, total),
-              )}
-            </p>
-            <h2 id="tour-dialog-title">{t(step.titleRo, step.titleEn)}</h2>
-            <p id="tour-dialog-body" className="tour-dialog-body">
-              {waiting
-                ? translate(language, "Se încarcă pasul…", "Loading step…")
-                : t(step.bodyRo, step.bodyEn)}
-            </p>
-            <div className="tour-dialog-actions">
-              <button
-                type="button"
-                className="text-button"
-                data-testid="tour-skip"
-                onClick={endTour}
-              >
-                {labels.skip}
-              </button>
-              <span className="tour-dialog-actions-spacer" aria-hidden="true" />
+            aria-hidden="true"
+          />
+        ) : null}
+        <div
+          ref={dialogRef}
+          className={`tour-dialog${sheetMode ? " tour-dialog--sheet" : ""}${centeredMissing ? " tour-dialog--center" : ""}`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tour-dialog-title"
+          aria-describedby="tour-dialog-body"
+          tabIndex={-1}
+          data-testid="tour-dialog"
+          style={
+            sheetMode || centeredMissing
+              ? undefined
+              : placement !== "sheet"
+                ? desktopTooltipStyle(placement as TourStepPlacement, targetRect ?? { top: 80, left: 24, width: 0, height: 0 })
+                : undefined
+          }
+        >
+          {sheetMode ? <div className="tour-sheet-handle" aria-hidden="true" /> : null}
+          <div className="tour-progress-row">
+            <span className="tour-step-label" id="tour-dialog-step">
+              {translate(language, ...tourUi.progress(state.stepIndex + 1, total))}
+            </span>
+            <div className="tour-dot-bar" aria-hidden="true">
+              {steps.map((dot, index) => (
+                <span
+                  key={dot.id}
+                  className={
+                    index === state.stepIndex
+                      ? "is-active"
+                      : index < state.stepIndex
+                        ? "is-done"
+                        : ""
+                  }
+                />
+              ))}
+            </div>
+          </div>
+          <h2 id="tour-dialog-title" ref={titleRef} tabIndex={-1}>
+            {centeredMissing
+              ? translate(language, ...tourUi.targetMissing)
+              : t(step.titleRo, step.titleEn)}
+          </h2>
+          <p id="tour-dialog-body" className="tour-dialog-body">
+            {waiting
+              ? translate(language, ...tourUi.loadingStep)
+              : centeredMissing
+                ? ""
+                : bodyForStep(step, language)}
+          </p>
+          {isFirst && !centeredMissing ? (
+            <label className="tour-dismiss-check">
+              <input
+                type="checkbox"
+                checked={state.dontShowAgain}
+                onChange={(event) =>
+                  dispatch({ type: "SET_DONT_SHOW", value: event.target.checked })
+                }
+              />
+              {translate(language, ...tourUi.dontShowAgain)}
+            </label>
+          ) : null}
+          <div className="tour-dialog-actions">
+            <button
+              type="button"
+              className="tour-link-button"
+              data-testid="tour-skip"
+              onClick={endTour}
+            >
+              {translate(language, ...tourUi.skipTour)}
+            </button>
+            <div className="tour-dialog-actions-main">
               {!isFirst ? (
                 <button
                   type="button"
@@ -366,25 +568,106 @@ export function TourProvider({ children }: { children: ReactNode }) {
                   data-testid="tour-back"
                   onClick={() => dispatch({ type: "BACK" })}
                 >
-                  {labels.back}
+                  {translate(language, ...tourUi.back)}
                 </button>
               ) : null}
-              <button
-                type="button"
-                className="button primary"
-                data-testid="tour-next"
-                disabled={waiting && !targetRect}
-                onClick={() => {
-                  if (isLast) endTour();
-                  else dispatch({ type: "NEXT" });
-                }}
-              >
-                {isLast ? labels.close : labels.next}
-              </button>
+              {step.action === "required" && !centeredMissing ? (
+                <span className="tour-required-hint" data-testid="tour-required-hint">
+                  {translate(language, ...tourUi.requiredHint)}
+                </span>
+              ) : null}
+              {(step.action !== "required" ||
+                centeredMissing ||
+                Boolean(step.advanceRoute)) && (
+                <button
+                  type="button"
+                  className="button primary"
+                  data-testid="tour-next"
+                  disabled={waiting && !centeredMissing && !targetRect}
+                  onClick={onPrimary}
+                >
+                  {centeredMissing
+                    ? translate(language, ...tourUi.skipStep)
+                    : isLast
+                      ? translate(language, ...tourUi.done)
+                      : translate(language, ...tourUi.next)}
+                </button>
+              )}
             </div>
           </div>
+          {isLast && step.handoffOwnerTour ? (
+            <button
+              type="button"
+              className="button tour-owner-handoff"
+              data-testid="tour-owner-handoff"
+              onClick={() => startTour("owner", 0)}
+            >
+              {translate(language, ...tourUi.ownerHandoff)}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="tour-close"
+            data-testid="tour-close"
+            aria-label={translate(language, ...tourUi.closeTour)}
+            onClick={endTour}
+          >
+            ×
+          </button>
+        </div>
+        <div ref={liveRef} className="sr-only" aria-live="polite" />
+      </div>
+    ) : null;
+
+  return (
+    <TourContext.Provider value={contextValue}>
+      {children}
+      {mounted ? createPortal(overlay, document.body) : null}
+      {toast ? (
+        <div className="tour-toast" role="status">
+          {toast}
         </div>
       ) : null}
+      <TourAutoOfferChip />
     </TourContext.Provider>
+  );
+}
+
+function TourAutoOfferChip() {
+  const { language, viewer } = usePlatform();
+  const { startTour, storage, running } = useProductTour();
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (running || viewer || storage.dismissed || storage.resume) return;
+    const onHome = window.location.pathname === "/";
+    if (!onHome) return;
+    const timer = window.setTimeout(() => setVisible(true), 4000);
+    return () => window.clearTimeout(timer);
+  }, [running, storage.dismissed, storage.resume, viewer]);
+  if (!visible) return null;
+  return (
+    <div className="tour-auto-chip page-width" role="status">
+      <span>{translate(language, ...tourUi.autoOffer)}</span>
+      <button
+        type="button"
+        className="button primary"
+        data-testid="tour-auto-offer"
+        onClick={() => {
+          setVisible(false);
+          startTour("buyer", 0);
+        }}
+      >
+        {translate(language, ...tourUi.takeTour)}
+      </button>
+      <button
+        type="button"
+        className="text-button"
+        data-testid="tour-auto-dismiss"
+        onClick={() => setVisible(false)}
+      >
+        {translate(language, ...tourUi.closeTour)}
+      </button>
+    </div>
   );
 }

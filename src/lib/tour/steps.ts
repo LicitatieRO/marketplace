@@ -1,115 +1,267 @@
-import type { TourStepDefinition } from "./types";
+import {
+  TOUR_DEMO_LISTING_ID,
+  TOUR_LISTING_ROUTE,
+  TOUR_MAP_LISTING_ROUTE,
+} from "./constants";
+import type { TourKind, TourStepDefinition } from "./types";
 
-/** Full step catalogue for future UX spec; only placeholders are active for now. */
-export const TOUR_STEP_CATALOGUE: TourStepDefinition[] = [
+export const BUYER_TOUR_STEPS: TourStepDefinition[] = [
   {
-    id: "catalogue-hero",
-    selector: '[data-tour="catalogue-hero"]',
+    id: "B1",
+    tour: "buyer",
     route: "/",
-    titleRo: "Bine ai venit",
-    titleEn: "Welcome",
+    target: "hero",
+    titleRo: "Bun venit la LicitatieRO",
+    titleEn: "Welcome to LicitatieRO",
     bodyRo:
-      "Tur rapid prin catalogul demonstrativ — locuințe din București, oferte simulate.",
+      "Locuințe din București, la licitație transparentă. Îți arătăm în 1 minut cum funcționează.",
     bodyEn:
-      "A quick walkthrough of the demo catalogue — Bucharest homes and simulated offers.",
+      "Bucharest homes, sold by transparent auction. A one-minute look at how it works.",
     placement: "bottom",
+    desktopPlacement: "center",
+    mobilePlacement: "sheet",
+    action: "optional",
   },
   {
-    id: "catalogue-search",
-    selector: '[data-tour="catalogue-search"]',
+    id: "B2",
+    tour: "buyer",
     route: "/",
-    titleRo: "Caută și filtrează",
-    titleEn: "Search and filter",
+    target: "poc-banner",
+    titleRo: "Totul e simulare",
+    titleEn: "Everything is simulated",
     bodyRo:
-      "Alege vânzare sau închiriere, bugetul și cartierul — rezultatele se actualizează imediat.",
+      "Ofertele, rezervările și plățile sunt POC / Simulare. Nu se mișcă bani reali și nu există escrow.",
     bodyEn:
-      "Pick sale or rent, budget, and neighborhood — results update instantly.",
+      "Bids, reservations and payments are POC / Simulation. No real money moves and there is no escrow.",
     placement: "bottom",
+    mobilePlacement: "sheet",
+    action: "optional",
   },
   {
-    id: "catalogue-map",
-    selector: '[data-tour="catalogue-map"]',
+    id: "B3",
+    tour: "buyer",
     route: "/",
-    titleRo: "Harta catalogului",
-    titleEn: "Catalogue map",
+    target: "catalogue-search",
+    titleRo: "Caută în ritmul tău",
+    titleEn: "Search your way",
     bodyRo:
-      "Vezi locuințele pe hartă; deschide harta completă pentru licitații pe zone.",
+      "Alege Cumpără sau Închiriază, cartierul și bugetul. Filtrele te urmează și pe hartă.",
     bodyEn:
-      "See homes on the map; open the full map for area-based auctions.",
-    placement: "top",
+      "Pick Buy or Rent, a neighbourhood and a budget. Your filters carry over to the map.",
+    placement: "bottom",
+    mobilePlacement: "sheet",
+    action: "optional",
   },
   {
-    id: "listing-card",
-    selector: '[data-tour="listing-card"]',
+    id: "B4",
+    tour: "buyer",
     route: "/",
-    titleRo: "Anunț exemplu",
-    titleEn: "Sample listing",
+    target: "listing-card",
+    titleRo: "Un anunț, dintr-o privire",
+    titleEn: "A listing at a glance",
     bodyRo:
-      "Deschide o locuință pentru detalii, licitație și mesaje — totul este simulare (POC).",
+      "Foto, cartier, preț și tipul licitației: deschisă sau confidențială. Salvează cu inimioara.",
     bodyEn:
-      "Open a home for details, bidding, and messages — everything is a POC simulation.",
-    placement: "top",
+      "Photo, area, price and auction type: open or confidential. Tap the heart to save it.",
+    placement: "right",
+    desktopPlacement: "right",
+    mobilePlacement: "sheet",
+    action: "optional",
   },
   {
-    id: "poc-simulation",
-    selector: '[data-tour="poc-simulation"]',
-    titleRo: "Simulare POC",
-    titleEn: "POC simulation",
+    id: "B5",
+    tour: "buyer",
+    route: "/",
+    target: "nav-map",
+    fallbackTargets: ['[data-testid="nav-map-link-mobile"]'],
+    titleRo: "Vezi totul pe hartă",
+    titleEn: "See it all on a map",
     bodyRo:
-      "Fără bani reali, fără escrow — bannerul reamintește că este doar demonstrație.",
+      "Deschide harta: listă și hartă una lângă alta pe desktop, comutator pe telefon.",
     bodyEn:
-      "No real money, no escrow — this banner reminds you it is demo-only.",
+      "Open the map: list and map side by side on desktop, a toggle on your phone.",
     placement: "bottom",
+    mobilePlacement: "sheet",
+    action: "required",
+    advanceRoute: "/map",
   },
   {
-    id: "account-signin",
-    selector: '[data-tour="account-signin"]',
-    titleRo: "Contul tău",
-    titleEn: "Your account",
-    bodyRo: "Autentifică-te pentru oferte, favorite și spațiul de lucru.",
-    bodyEn: "Sign in for bids, favorites, and your workspace.",
-    placement: "bottom",
-  },
-  {
-    id: "listing-price",
-    selector: '[data-tour="listing-price"]',
-    route: "/listings/20000000-0000-4000-8000-000000000001",
-    titleRo: "Preț afișat",
-    titleEn: "Asking price",
-    bodyRo: "Prețul de referință al anunțului — licitația poate avea reguli separate.",
-    bodyEn: "The listing reference price — the auction may have separate rules.",
-    placement: "bottom",
-  },
-  {
-    id: "listing-bid-panel",
-    selector: '[data-tour="listing-bid-panel"]',
-    route: "/listings/20000000-0000-4000-8000-000000000001",
-    titleRo: "Panou oferte",
-    titleEn: "Offer panel",
+    id: "B6",
+    tour: "buyer",
+    route: "/map",
+    target: "map-surface",
+    fallbackTargets: [
+      "map-consent-accept",
+      '[data-testid="listings-map-mobile-toggle"]',
+    ],
+    titleRo: "Prețuri pe hartă",
+    titleEn: "Prices on the map",
     bodyRo:
-      "Starea licitației, numărătoarea inversă și regulile sunt vizibile înainte să participi.",
+      "Pastilele arată oferta curentă. Pinul e aproximativ: adresa exactă nu e publică.",
     bodyEn:
-      "Auction state, countdown, and rules are visible before you participate.",
+      "Pills show the current bid. Pins are approximate, and the exact address is never public.",
+    bodyRoNoConsent:
+      "Harta OSM se încarcă doar dacă accepți. Lista merge oricum.",
+    bodyEnNoConsent:
+      "The OSM map loads only if you accept. The list works either way.",
     placement: "left",
+    mobilePlacement: "sheet",
+    action: "optional",
   },
   {
-    id: "listing-bid-button",
-    selector: '[data-tour="listing-bid-button"]',
-    route: "/listings/20000000-0000-4000-8000-000000000001",
-    titleRo: "Trimite oferta",
-    titleEn: "Submit an offer",
-    bodyRo: "După autentificare, oferta este înregistrată ca simulare — fără obligații legale.",
+    id: "B7",
+    tour: "buyer",
+    route: TOUR_MAP_LISTING_ROUTE,
+    target: "map-card-bid",
+    fallbackTargets: [
+      '[data-testid="map-guest-bid-login"]',
+      '[data-testid="map-card-scheduled-copy"]',
+    ],
+    titleRo: "Licitează în siguranță",
+    titleEn: "Bid safely",
+    bodyRo:
+      "Vezi pasul minim și timpul rămas. Orice ofertă cere o confirmare; nimic nu se trimite singur.",
     bodyEn:
-      "After sign-in, your offer is recorded as a simulation — no legal obligation.",
-    placement: "top",
+      "See the minimum step and time left. Every bid asks you to confirm, and nothing is sent automatically.",
+    placement: "left",
+    mobilePlacement: "sheet",
+    action: "optional",
+  },
+  {
+    id: "B8",
+    tour: "buyer",
+    route: TOUR_LISTING_ROUTE,
+    target: "offer-panel",
+    titleRo: "Regulile, la vedere",
+    titleEn: "Rules in plain sight",
+    bodyRo:
+      "Cronometrul și regula anti-sniping sunt decise de server. Proprietarul alege oferta după închidere.",
+    bodyEn:
+      "The countdown and anti-sniping rule are server-enforced. The owner picks an offer after closing.",
+    placement: "left",
+    mobilePlacement: "sheet",
+    action: "optional",
+  },
+  {
+    id: "B9",
+    tour: "buyer",
+    route: TOUR_LISTING_ROUTE,
+    target: "account-entry",
+    titleRo: "Gata să participi?",
+    titleEn: "Ready to take part?",
+    bodyRo:
+      "Creează un cont demo; te întoarcem exact la anunțul ăsta. Vrei și partea de proprietar?",
+    bodyEn:
+      "Create a demo account and we'll bring you back to this listing. Want to see the owner side too?",
+    placement: "bottom",
+    mobilePlacement: "sheet",
+    action: "optional",
+    handoffOwnerTour: true,
   },
 ];
 
-/** Investor-demo placeholder flow (home page only). */
-export const ACTIVE_TOUR_STEPS: TourStepDefinition[] = TOUR_STEP_CATALOGUE.filter(
-  (step) =>
-    step.id === "catalogue-hero" ||
-    step.id === "catalogue-search" ||
-    step.id === "catalogue-map" ||
-    step.id === "listing-card",
-);
+export const OWNER_TOUR_STEPS: TourStepDefinition[] = [
+  {
+    id: "O1",
+    tour: "owner",
+    target: "persona-switcher",
+    fallbackTargets: ["account-entry"],
+    titleRo: "Intră ca proprietar",
+    titleEn: "Switch to owner",
+    bodyRo:
+      "În demo, apasă Proprietar ca să vezi consola. Instrument doar pentru staging.",
+    bodyEn:
+      "In the demo, tap Owner to open the console. This tool exists on staging only.",
+    placement: "bottom",
+    mobilePlacement: "sheet",
+    action: "required",
+    requiresOwnerSession: false,
+  },
+  {
+    id: "O2",
+    tour: "owner",
+    route: "/workspace?tab=owner",
+    target: "workspace-owner-tab",
+    titleRo: "Consola proprietarului",
+    titleEn: "Owner console",
+    bodyRo:
+      "Proprietăți, licitații, oferte și mesaje, totul într-un loc.",
+    bodyEn:
+      "Properties, auctions, offers and messages, all in one place.",
+    placement: "bottom",
+    mobilePlacement: "sheet",
+    action: "optional",
+    requiresOwnerSession: true,
+  },
+  {
+    id: "O3",
+    tour: "owner",
+    route: "/workspace?tab=owner",
+    target: "owner-add-property",
+    titleRo: "Listează în câteva minute",
+    titleEn: "List in minutes",
+    bodyRo:
+      "Adaugă o proprietate o singură dată, apoi pune-o la vânzare, la închiriat sau ambele.",
+    bodyEn:
+      "Add a property once, then offer it for sale, for rent, or both.",
+    placement: "bottom",
+    mobilePlacement: "sheet",
+    action: "required",
+    requiresOwnerSession: true,
+  },
+  {
+    id: "O4",
+    tour: "owner",
+    route: "/workspace?tab=owner",
+    target: "wizard-dual-price",
+    fallbackTargets: ['data-tour="owner-add-property"'],
+    titleRo: "Vânzare + chirie",
+    titleEn: "Sale + rent",
+    bodyRo:
+      "Completează unul sau ambele prețuri; publicăm două anunțuri legate. Adresa exactă rămâne privată.",
+    bodyEn:
+      "Fill in one or both prices to publish two linked listings. The exact address stays private.",
+    placement: "top",
+    mobilePlacement: "sheet",
+    action: "optional",
+    requiresOwnerSession: true,
+  },
+  {
+    id: "O5",
+    tour: "owner",
+    route: "/workspace?tab=owner",
+    target: "promo-panel",
+    titleRo: "Promovare 10 € / 7 zile",
+    titleEn: "€10 / 7-day promotion",
+    bodyRo:
+      "Un preț acoperă ambele anunțuri. În POC rulează doar în mod test: suma reală e 0,00 €.",
+    bodyEn:
+      "One price covers both listings. In this POC it runs in test mode only, and the real charge is €0.00.",
+    placement: "top",
+    mobilePlacement: "sheet",
+    action: "optional",
+    requiresOwnerSession: true,
+  },
+  {
+    id: "O6",
+    tour: "owner",
+    route: "/workspace?tab=owner",
+    target: "owner-offers",
+    titleRo: "Tu alegi oferta",
+    titleEn: "You pick the offer",
+    bodyRo:
+      "Compară ofertele, inclusiv cele confidențiale, și alege după închidere. Rezervarea e simulată.",
+    bodyEn:
+      "Compare offers, including confidential ones, and choose after closing. The reservation is simulated.",
+    placement: "top",
+    mobilePlacement: "sheet",
+    action: "optional",
+    requiresOwnerSession: true,
+  },
+];
+
+export function stepsForTour(tour: TourKind): TourStepDefinition[] {
+  return tour === "buyer" ? BUYER_TOUR_STEPS : OWNER_TOUR_STEPS;
+}
+
+export { TOUR_DEMO_LISTING_ID };

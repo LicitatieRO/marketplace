@@ -10,6 +10,14 @@ const blocks = [
       "We use local keys licitatiero-language and licitatiero-theme for your chosen language and theme. These are necessary for the service you request in the browser and are not used for advertising.",
   },
   {
+    headingRo: "Tur ghidat (local)",
+    headingEn: "Guided tour (local)",
+    bodyRo:
+      "Cheia licitatiero-tour memorează progresul turului demonstrativ (reia turul, tur finalizat, opțiunea „Nu mai arăta”). Nu pleacă din browserul dvs.",
+    bodyEn:
+      "The licitatiero-tour key stores guided demo tour progress (resume, completed tours, “Don’t show again”). It never leaves your browser.",
+  },
+  {
     headingRo: "Conținut opțional",
     headingEn: "Optional content",
     bodyRo:

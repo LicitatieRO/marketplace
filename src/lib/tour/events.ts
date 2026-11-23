@@ -1,1 +1,0 @@
-export const TOUR_START_EVENT = "licitatiero-tour-start";

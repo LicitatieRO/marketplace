@@ -76,7 +76,7 @@ export function AccountSwitcher({
     <div
       className="demo-banner"
       data-testid="poc-account-switcher"
-      data-tour="poc-role-switch"
+      data-tour="persona-switcher"
       style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

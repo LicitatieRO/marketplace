@@ -77,6 +77,7 @@ export function ListingsMapCanvas({
         type="button"
         className="button primary"
         data-testid="listings-map-accept"
+        data-tour="map-consent-accept"
         onClick={onAcceptMap}
       >
         {t(mapThirdPartyConsent.acceptRo, mapThirdPartyConsent.acceptEn)}

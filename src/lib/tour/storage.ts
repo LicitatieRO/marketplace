@@ -1,35 +1,89 @@
-export const TOUR_STORAGE_KEY = "licitatiero-product-tour";
-export const TOUR_VERSION = 1;
+import type { TourKind } from "./types";
 
-export type TourPersistedState = {
-  version: number;
-  stepIndex: number;
-  inProgress: boolean;
+export const TOUR_STORAGE_KEY = "licitatiero-tour";
+export const TOUR_STORAGE_VERSION = 1;
+
+export type TourResumeState = {
+  tour: TourKind;
+  step: number;
 };
 
-export function readTourPersistence(): TourPersistedState | null {
-  if (typeof window === "undefined") return null;
+export type TourPersistedV1 = {
+  v: 1;
+  dismissed: boolean;
+  completed: TourKind[];
+  resume: TourResumeState | null;
+};
+
+export const emptyTourStorage = (): TourPersistedV1 => ({
+  v: TOUR_STORAGE_VERSION,
+  dismissed: false,
+  completed: [],
+  resume: null,
+});
+
+function tourLocalStorage(): Storage | null {
+  if (typeof globalThis.localStorage === "undefined") return null;
+  return globalThis.localStorage;
+}
+
+export function readTourStorage(): TourPersistedV1 {
+  const storage = tourLocalStorage();
+  if (!storage) return emptyTourStorage();
   try {
-    const raw = localStorage.getItem(TOUR_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as TourPersistedState;
-    if (parsed.version !== TOUR_VERSION) return null;
-    if (
-      typeof parsed.stepIndex !== "number" ||
-      typeof parsed.inProgress !== "boolean"
-    ) {
-      return null;
-    }
-    return parsed;
+    const raw = storage.getItem(TOUR_STORAGE_KEY);
+    if (!raw) return emptyTourStorage();
+    const parsed = JSON.parse(raw) as Partial<TourPersistedV1>;
+    if (parsed.v !== TOUR_STORAGE_VERSION) return emptyTourStorage();
+    return {
+      v: 1,
+      dismissed: Boolean(parsed.dismissed),
+      completed: Array.isArray(parsed.completed)
+        ? parsed.completed.filter((t): t is TourKind => t === "buyer" || t === "owner")
+        : [],
+      resume:
+        parsed.resume &&
+        (parsed.resume.tour === "buyer" || parsed.resume.tour === "owner") &&
+        typeof parsed.resume.step === "number"
+          ? { tour: parsed.resume.tour, step: parsed.resume.step }
+          : null,
+    };
   } catch {
-    return null;
+    return emptyTourStorage();
   }
 }
 
-export function writeTourPersistence(state: TourPersistedState): void {
-  localStorage.setItem(TOUR_STORAGE_KEY, JSON.stringify(state));
+export function writeTourStorage(next: TourPersistedV1): void {
+  tourLocalStorage()?.setItem(TOUR_STORAGE_KEY, JSON.stringify(next));
 }
 
-export function clearTourPersistence(): void {
-  localStorage.removeItem(TOUR_STORAGE_KEY);
+export function mergeTourStorage(
+  patch: Partial<Omit<TourPersistedV1, "v">>,
+): TourPersistedV1 {
+  const current = readTourStorage();
+  const merged: TourPersistedV1 = {
+    ...current,
+    ...patch,
+    v: TOUR_STORAGE_VERSION,
+    completed: patch.completed ?? current.completed,
+    resume: patch.resume === undefined ? current.resume : patch.resume,
+  };
+  writeTourStorage(merged);
+  return merged;
+}
+
+export function markTourCompleted(tour: TourKind): TourPersistedV1 {
+  const current = readTourStorage();
+  const completed = current.completed.includes(tour)
+    ? current.completed
+    : [...current.completed, tour];
+  return mergeTourStorage({ completed, resume: null });
+}
+
+export function setTourResume(tour: TourKind, step: number): TourPersistedV1 {
+  return mergeTourStorage({ resume: { tour, step } });
+}
+
+export function clearTourResume(): TourPersistedV1 {
+  return mergeTourStorage({ resume: null });
 }

@@ -2,13 +2,13 @@
 
 import { Suspense, type ReactNode } from "react";
 import { TourProvider } from "@/components/tour/tour-context";
-import { TourQueryAutoStart } from "@/components/tour/tour-query-autostart";
+import { TourQuerySync } from "@/components/tour/tour-query-sync";
 
 export function TourShell({ children }: { children: ReactNode }) {
   return (
     <TourProvider>
       <Suspense fallback={null}>
-        <TourQueryAutoStart />
+        <TourQuerySync />
       </Suspense>
       {children}
     </TourProvider>

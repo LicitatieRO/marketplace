@@ -56,6 +56,11 @@ test.describe("social login (coming soon) and data deletion legal page", () => {
         "If you sent auction invitations or placed bids, automatic deletion may be blocked",
       ),
     ).toBeVisible();
-    await expect(page.getByText("promotions or reports")).toHaveCount(0);
+    await expect(page.getByText("favourites, notifications or promotions")).toHaveCount(0);
+    await expect(
+      page.getByText(
+        "In-app deletion is available if your account has no recorded activity (for example listings, auctions, bids, reservations, messages, viewing requests, favourites or promotions).",
+      ),
+    ).toBeVisible();
   });
 });

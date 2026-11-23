@@ -1,9 +1,10 @@
+# Staging (licitatiero-staging) is deployed out-of-band via the Vercel API at the full
+# main SHA, with migrations and smoke run handled by the DB & Reliability operator.
+# This workflow is retained for optional manual use once the GitHub staging environment
+# secrets and variables are configured.
 name: Deploy staging
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
+  workflow_dispatch:
 permissions:
   contents: read
   actions: read

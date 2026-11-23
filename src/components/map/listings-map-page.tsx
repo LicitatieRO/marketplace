@@ -70,7 +70,10 @@ export function ListingsMapPage() {
   const globalAllows = useAllowsOptionalContent();
   const [localAccepted, setLocalAccepted] = useState(false);
   const allowsTiles = globalAllows || localAccepted;
-  const [mobileView, setMobileView] = useState<"list" | "map">("list");
+  const [mobileView, setMobileView] = useState<"list" | "map">(() => {
+    if (typeof window === "undefined") return "list";
+    return parseListingsMapView(new URLSearchParams(window.location.search));
+  });
   const [listings, setListings] = useState<MapListing[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
@@ -593,7 +596,10 @@ export function ListingsMapPage() {
           </p>
         ) : null}
       </header>
-      <div className="listings-map-layout">
+      <div
+        className="listings-map-layout"
+        data-map-layout-view={mobileView}
+      >
         <aside id="map-list-panel" className="listings-map-list" aria-label={t("Listă proprietăți", "Property list")}>
           {visibleListings.length === 0 ? (
             <p>

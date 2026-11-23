@@ -48,6 +48,31 @@ INSERT INTO app.profiles(id, display_name)
 VALUES ('aaaaaaaa-0000-4000-8000-000000000010', 'MFA audit tester')
 ON CONFLICT (id) DO NOTHING;
 
+INSERT INTO auth.mfa_factors (
+  id,
+  user_id,
+  friendly_name,
+  factor_type,
+  status,
+  secret,
+  created_at,
+  updated_at
+)
+VALUES (
+  'bbbbbbbb-0000-4000-8000-000000000020'::uuid,
+  'aaaaaaaa-0000-4000-8000-000000000010'::uuid,
+  'Audit factor',
+  'totp',
+  'verified',
+  'AAAAAAAAAAAAAAAA',
+  clock_timestamp(),
+  clock_timestamp()
+)
+ON CONFLICT (id) DO NOTHING;
+
+DELETE FROM auth.mfa_factors
+WHERE id = 'bbbbbbbb-0000-4000-8000-000000000020'::uuid;
+
 SET LOCAL ROLE service_role;
 
 SELECT lives_ok(
@@ -55,7 +80,7 @@ SELECT lives_ok(
     'aaaaaaaa-0000-4000-8000-000000000010'::uuid,
     'bbbbbbbb-0000-4000-8000-000000000020'::uuid
   )$$,
-  'service_role can append MFA unenroll audit'
+  'service_role appends audit after factor removed'
 );
 
 RESET ROLE;

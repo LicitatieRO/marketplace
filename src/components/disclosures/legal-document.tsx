@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePlatform } from "@/components/platform";
-type Block = { headingRo: string; headingEn: string; bodyRo: string; bodyEn: string };
+type Block = { headingRo: string; headingEn: string; bodyRo: string; bodyEn: string; anchorId?: string };
 export function LegalDocument({
   titleRo,
   titleEn,
@@ -24,7 +24,7 @@ export function LegalDocument({
       </p>
       {blocks.map((block) => (
         <section key={block.headingEn} style={{ marginBottom: 28 }}>
-          <h2>{t(block.headingRo, block.headingEn)}</h2>
+          <h2 id={block.anchorId}>{t(block.headingRo, block.headingEn)}</h2>
           <p style={{ whiteSpace: "pre-line" }}>{t(block.bodyRo, block.bodyEn)}</p>
         </section>
       ))}

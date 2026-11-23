@@ -1,6 +1,6 @@
 BEGIN;
 SET search_path = public, extensions;
-SELECT plan(33);
+SELECT plan(35);
 
 SELECT ok(
   has_function_privilege('service_role', 'public.account_delete_eligibility(uuid)', 'EXECUTE'),
@@ -102,7 +102,8 @@ VALUES
   ('a1690001-0000-4000-8000-000000000005', 'adelete-blockers@example.test', now()),
   ('a1690001-0000-4000-8000-000000000006', 'adelete-auction-owner@example.test', now()),
   ('a1690001-0000-4000-8000-000000000007', 'adelete-invitee@example.test', now()),
-  ('a1690001-0000-4000-8000-000000000008', 'adelete-notify@example.test', now())
+  ('a1690001-0000-4000-8000-000000000008', 'adelete-notify@example.test', now()),
+  ('a1690001-0000-4000-8000-000000000009', 'adelete-search-notify@example.test', now())
 ON CONFLICT (id) DO NOTHING;
 
 UPDATE app.profiles SET is_staff = true
@@ -146,6 +147,11 @@ SELECT set_config(
 SELECT set_config(
   'test.notify_user',
   'a1690001-0000-4000-8000-000000000008',
+  true
+);
+SELECT set_config(
+  'test.search_notify_user',
+  'a1690001-0000-4000-8000-000000000009',
   true
 );
 
@@ -764,7 +770,7 @@ SELECT is(
   'invite-only auction member may delete'
 );
 SELECT is(
-  app.account_delete_release_invites(
+  public.account_delete_release_invites(
     current_setting('test.invitee_user')::uuid
   ),
   1,
@@ -820,7 +826,7 @@ SELECT is(
   'auction inviter still blocked via invited_by history'
 );
 SELECT is(
-  app.account_delete_release_invites(
+  public.account_delete_release_invites(
     current_setting('test.auction_owner')::uuid
   ),
   0,
@@ -860,7 +866,7 @@ SELECT is(
   'bidder with auction membership still blocked by open bids'
 );
 SELECT is(
-  app.account_delete_release_invites(
+  public.account_delete_release_invites(
     current_setting('test.blocker_user')::uuid
   ),
   0,
@@ -876,6 +882,35 @@ SELECT ok(
       AND auction_id = 'a1690109-0000-4000-8000-000000000030'
   ),
   'membership with bids remains after release invites'
+);
+
+INSERT INTO app.notification_outbox (user_id, event, entity_id)
+VALUES (
+  current_setting('test.search_notify_user')::uuid,
+  'search.updated',
+  'a1690120-0000-4000-8000-000000000001'
+);
+
+SET LOCAL ROLE service_role;
+SELECT is(
+  public.account_delete_eligibility(
+    current_setting('test.search_notify_user')::uuid
+  ),
+  NULL,
+  'search alert outbox row alone does not block delete'
+);
+RESET ROLE;
+
+DELETE FROM app.profiles
+WHERE id = current_setting('test.search_notify_user')::uuid;
+
+SELECT ok(
+  NOT EXISTS (
+    SELECT 1
+    FROM app.notification_outbox
+    WHERE user_id = current_setting('test.search_notify_user')::uuid
+  ),
+  'notification outbox cascades when profile is deleted'
 );
 
 SELECT * FROM finish();

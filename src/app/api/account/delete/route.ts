@@ -78,6 +78,8 @@ export async function POST(request: Request) {
         503,
       );
     }
+    // Release and deleteUser are not atomic; if delete fails, invite-only rows stay
+    // released. That is acceptable because the auction owner can invite again.
     const { error: releaseError } = await admin.rpc(
       "account_delete_release_invites",
       { p_user_id: user.id },

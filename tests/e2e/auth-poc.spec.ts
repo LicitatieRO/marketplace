@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { switchPocDemoPersona } from "./helpers/poc-demo-switcher";
 
 test.describe("auth/legal POC (configured backend)", () => {
   test.skip(
@@ -169,13 +170,7 @@ test.describe("auth/legal POC (configured backend)", () => {
     );
     await page.goto("/");
     await expect(page.getByTestId("poc-account-switcher")).toBeVisible();
-    const switchResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes("/api/poc/switch-account") &&
-        response.request().method() === "POST",
-    );
-    await page.getByRole("button", { name: "Proprietar", exact: true }).click();
-    expect((await switchResponse).ok()).toBe(true);
+    await switchPocDemoPersona(page, "owner", { waitForSwitchApi: true });
     await expect(page.getByRole("link", { name: "Spațiul meu" })).toBeVisible();
   });
 

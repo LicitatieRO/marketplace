@@ -6,7 +6,25 @@ import { getMapTileClientConfig } from "@/lib/server/map-tile-config";
 import { isPocSwitcherServerEnabled } from "@/lib/server/poc-switcher";
 import { siteRootRobotsMetadata } from "@/lib/site-indexing";
 import "./globals.css";
+
+function resolveMetadataBase(): URL {
+  const fromSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (fromSiteUrl) {
+    try {
+      return new URL(fromSiteUrl);
+    } catch {
+      /* fall through */
+    }
+  }
+  const vercel = process.env.VERCEL_URL?.trim();
+  if (vercel) {
+    return new URL(`https://${vercel}`);
+  }
+  return new URL("http://localhost:3000");
+}
+
 export const metadata: Metadata = {
+  metadataBase: resolveMetadataBase(),
   icons: { icon: "/icon.svg" },
   title: {
     default: "LicitatieRO — POC / Simulare · Locuințe în București",

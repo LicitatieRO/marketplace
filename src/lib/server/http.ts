@@ -21,6 +21,7 @@ export function failure(error:unknown,options?:FailureOptions){
   const safeServiceMessages=new Set([
    'Authenticator verification is temporarily unavailable.',
    'payments_unavailable',
+   'payments_blocked',
    'Supabase is not configured. Connect a backend before saving changes.',
    'Configure worker credentials before enabling notifications.',
    'Configure worker and email credentials before enabling notifications.',

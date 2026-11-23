@@ -25,6 +25,15 @@ const blocks = [
     bodyEn:
       "Email confirmation is a demonstration check only. It is not KYC/AML, does not use ROeID, and does not prove ownership of any property.",
   },
+  {
+    anchorId: "how-we-rank-listings",
+    headingRo: "Cum ordonăm anunțurile",
+    headingEn: "How we rank listings",
+    bodyRo:
+      "Opțiunea „Implicit” păstrează ordinea primită de la server (identificatorul anunțului), nu un scor de calitate sau o recomandare personalizată. Puteți sorta după preț sau suprafață. O promovare, inclusiv o previzualizare de test, este marcată cu eticheta „Promovat” și, în acest moment, nu modifică poziția în listă.",
+    bodyEn:
+      "The “Default” option keeps the order received from the server (the listing identifier). It is not a quality score or a personalised recommendation. You can also sort by price or area. A promotion, including a test preview, is marked “Promoted” and, at this time, does not change position in the list.",
+  },
 ];
 export default function LegalTermsPage() {
   return (

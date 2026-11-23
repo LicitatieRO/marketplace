@@ -2,6 +2,7 @@ import { assertSameOrigin, requestOrigin } from '@/lib/security';
 import { dsaNoticeSubmit } from '@/lib/dsa-notices';
 import { enforceAuthHttpRateLimit } from '@/lib/server/auth-rate-limit';
 import { databaseFailure, failure, json, readJson } from '@/lib/server/http';
+import { languageFromRequest } from '@/lib/server/public-validation';
 import { submitDsaNotice } from '@/lib/server/dsa-notices-db';
 import { isServiceRoleConfigured } from '@/lib/server/notifications-db';
 import { listingUrlFromRequest } from '@/lib/dsa-notice-url';
@@ -29,6 +30,6 @@ export async function POST(request: Request) {
     if (error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === 'P0001') {
       return databaseFailure(error as { code?: string; message?: string });
     }
-    return failure(error);
+    return failure(error, { language: languageFromRequest(request.headers) });
   }
 }

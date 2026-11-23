@@ -28,7 +28,7 @@ import { ROMANIA_BBOX } from "@/lib/geo-bounds";
 import {
   listingsMapSearchParams,
   parseListingsMapListingId,
-  parseListingsMapView,
+  type ListingsMapView,
 } from "@/lib/listings-map-url";
 import {
   effectiveServerNowMs,
@@ -65,15 +65,17 @@ function focusableCardNodes(container: HTMLElement): HTMLElement[] {
   ).filter((node) => !node.hasAttribute("disabled") && node.tabIndex !== -1);
 }
 
-export function ListingsMapPage() {
+export function ListingsMapPage({
+  initialMobileView = "list",
+}: {
+  initialMobileView?: ListingsMapView;
+}) {
   const { t, language, viewer, configured } = usePlatform();
   const globalAllows = useAllowsOptionalContent();
   const [localAccepted, setLocalAccepted] = useState(false);
   const allowsTiles = globalAllows || localAccepted;
-  const [mobileView, setMobileView] = useState<"list" | "map">(() => {
-    if (typeof window === "undefined") return "list";
-    return parseListingsMapView(new URLSearchParams(window.location.search));
-  });
+  const [mobileView, setMobileView] =
+    useState<ListingsMapView>(initialMobileView);
   const [listings, setListings] = useState<MapListing[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
@@ -223,7 +225,6 @@ export function ListingsMapPage() {
     const params = new URLSearchParams(window.location.search);
     const listing = parseListingsMapListingId(params.get("listing"));
     if (listing) setSelectedId(listing);
-    setMobileView(parseListingsMapView(params));
     setClientNowMs(Date.now());
     setRawUrlFilters(parseCatalogueMapFilters(params));
     void fetchListings(DEFAULT_BBOX);

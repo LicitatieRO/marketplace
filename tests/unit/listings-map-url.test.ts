@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   listingsMapSearchParams,
+  listingsMapUrlParamsFromRecord,
   parseListingsMapBboxParam,
   parseListingsMapListingId,
   parseListingsMapView,
@@ -40,6 +41,19 @@ describe("listingsMapSearchParams", () => {
       mobileView: "list",
     });
     expect(params.get("listing")).toBeNull();
+  });
+});
+
+describe("listingsMapUrlParamsFromRecord", () => {
+  it("builds URLSearchParams from Next searchParams record", () => {
+    const params = listingsMapUrlParamsFromRecord({
+      view: "map",
+      foo: undefined,
+      tag: ["a", "b"],
+    });
+    expect(params.get("view")).toBe("map");
+    expect(params.getAll("tag")).toEqual(["a", "b"]);
+    expect(params.get("foo")).toBeNull();
   });
 });
 

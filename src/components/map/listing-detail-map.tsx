@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import type { Listing } from "@/lib/types";
@@ -14,7 +15,15 @@ import { resolveMapSurface } from "@/lib/map-tiles";
 import { listingMapOnAuctionMapLink, listingPublicMapPin } from "@/lib/listing-detail-facts";
 import { mapThirdPartyConsent, pinDisclaimer } from "./map-copy";
 import { MapGloballyUnavailable } from "./map-unavailable";
-import { PropertyMap, type MapPin } from "./property-map";
+import type { MapPin } from "./property-map";
+
+const PropertyMap = dynamic(
+  () =>
+    import("./property-map").then((m) => ({
+      default: m.PropertyMap,
+    })),
+  { ssr: false },
+);
 
 export function ListingDetailMap({ listing }: { listing: Listing }) {
   const { t, mapTileConfig } = usePlatform();

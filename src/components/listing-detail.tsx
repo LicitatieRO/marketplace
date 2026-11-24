@@ -35,6 +35,7 @@ import { LiveAuctionBidControl } from "@/components/live-auction-bid-control";
 import { placeBidAmountMinor } from "@/lib/bid-confirm-amount";
 import { bidGlossary } from "@/lib/bid-copy";
 import { formatMapEndedCardLine } from "@/lib/map-listing-time";
+import { buildLoginBidIntentUrl } from "@/lib/auth-return";
 import { useListingBidViewerFlags } from "@/lib/listing-bid-viewer-state";
 import { Feedback, useMutation, usePlatform } from "./platform";
 import { AuctionCountdown, useAuctionCountdown } from "./auction-countdown";
@@ -758,7 +759,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                   <Link
                     className="button primary"
                     data-testid="listing-guest-bid-login"
-                    href={`/login?next=${encodeURIComponent(listingPath)}&intent=bid`}
+                    href={buildLoginBidIntentUrl(listingPath)}
                   >
                     {bidTerms.signInToBid}
                     <ArrowUpRight size={16} />

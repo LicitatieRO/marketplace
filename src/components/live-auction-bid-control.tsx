@@ -108,7 +108,9 @@ export function LiveAuctionBidControl({
           aria-live="polite"
           data-testid={`${testIdPrefix}-leading-banner`}
         >
-          {language === "ro" ? "Ești pe primul loc" : "You're the highest bidder"}
+          {language === "ro"
+            ? "Ești pe primul loc (simulare)"
+            : "You're the highest bidder (simulation)"}
         </p>
       ) : null}
       <label className={variant === "map" ? "small" : undefined} htmlFor={inputId}>

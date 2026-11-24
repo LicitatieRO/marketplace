@@ -572,7 +572,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
           </section>
         </div>
         <aside className="offer-sidebar">
-          <div className="offer-panel">
+          <div className="offer-panel" data-tour="offer-panel">
             {listing.auction_id ? (
               <>
                 <div className="offer-panel-top">

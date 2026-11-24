@@ -15,12 +15,14 @@ import {
   Search,
   SlidersHorizontal,
   Square,
+  Compass,
   X,
 } from "lucide-react";
 import type { Listing, TransactionType } from "@/lib/types";
-import { heroMapCta, heroSubline, listingTitle } from "@/lib/i18n";
+import { heroMapCta, heroSubline, listingTitle, tourUi } from "@/lib/i18n";
 import { money } from "@/lib/format";
 import { buildMapPathFromCatalogueFilters } from "@/lib/catalogue-map-path";
+import { useProductTour } from "@/components/tour/tour-context";
 import { Feedback, useMutation, usePlatform } from "./platform";
 
 const CatalogueMap = dynamic(
@@ -33,6 +35,7 @@ const CatalogueMap = dynamic(
 
 export function Catalogue({ listings }: { listings: Listing[] }) {
   const { t, language, setCatalogueMapPath } = usePlatform();
+  const { startTour } = useProductTour();
   const [transaction, setTransaction] = useState<TransactionType>("sale");
   const [query, setQuery] = useState("");
   const [neighborhood, setNeighborhood] = useState("");
@@ -112,7 +115,7 @@ export function Catalogue({ listings }: { listings: Listing[] }) {
   };
   return (
     <main id="main">
-      <section className="hero page-width">
+      <section className="hero page-width" data-tour="hero">
         <div className="hero-content">
           <div className="eyebrow">
             <span className="tiny-line" />
@@ -134,6 +137,15 @@ export function Catalogue({ listings }: { listings: Listing[] }) {
               {t(heroMapCta.ro, heroMapCta.en)}
               <ArrowUpRight size={15} aria-hidden />
             </Link>
+            <button
+              type="button"
+              className="button tour-hero-pill"
+              data-testid="tour-start-home"
+              onClick={() => startTour("buyer", 0)}
+            >
+              <Compass size={16} aria-hidden />
+              {t(...tourUi.takeTourMinute)}
+            </button>
           </div>
         </div>
         <div className="hero-aside">
@@ -159,7 +171,7 @@ export function Catalogue({ listings }: { listings: Listing[] }) {
         className="catalogue-section page-width"
         aria-label={t("Catalog de proprietăți", "Property catalogue")}
       >
-        <div className="search-panel">
+        <div className="search-panel" data-tour="catalogue-search">
           <div
             className="transaction-tabs"
             role="tablist"
@@ -345,6 +357,7 @@ export function Catalogue({ listings }: { listings: Listing[] }) {
                 key={listing.id}
                 listing={listing}
                 priority={index < 3}
+                tourAnchor={index === 0}
               />
             ))}
           </div>
@@ -448,9 +461,11 @@ export function Catalogue({ listings }: { listings: Listing[] }) {
 export function PropertyCard({
   listing,
   priority = false,
+  tourAnchor = false,
 }: {
   listing: Listing;
   priority?: boolean;
+  tourAnchor?: boolean;
 }) {
   const { t, language, viewer, configured, favorites, setFavoriteSaved } =
     usePlatform();
@@ -485,7 +500,10 @@ export function PropertyCard({
       setFavoriteSaved(listing.id, !saved);
   };
   return (
-    <article className="property-card">
+    <article
+      className="property-card"
+      {...(tourAnchor ? { "data-tour": "listing-card" } : {})}
+    >
       <div className="card-image">
         <Link
           href={`/listings/${listing.id}`}

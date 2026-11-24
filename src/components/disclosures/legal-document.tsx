@@ -25,7 +25,7 @@ export function LegalDocument({
       {blocks.map((block) => (
         <section key={block.headingEn} style={{ marginBottom: 28 }}>
           <h2 id={block.anchorId}>{t(block.headingRo, block.headingEn)}</h2>
-          <p>{t(block.bodyRo, block.bodyEn)}</p>
+          <p style={{ whiteSpace: "pre-line" }}>{t(block.bodyRo, block.bodyEn)}</p>
         </section>
       ))}
       <nav className="muted small" aria-label={t("Politici legale", "Legal policies")}>

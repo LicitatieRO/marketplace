@@ -37,7 +37,9 @@ export async function GET() {
   try {
     const { db } = await requireSignedInUser();
     const { data, error } = await db.auth.getUserIdentities();
-    if (error) throw new RequestError("Unable to read linked sign-in methods.", 503);
+    if (error) {
+      throw new RequestError("Unable to read linked sign-in methods.", 503);
+    }
     const identities = mapIdentities(data?.identities || []);
     return json({
       data: {

@@ -21,6 +21,7 @@ export function PocSiteBanner() {
       className={`demo-banner demo-banner-poc${expanded ? " is-expanded" : " is-collapsed"}`}
       role="status"
       data-testid="poc-simulation-banner"
+      data-tour="poc-banner"
       aria-label={t(pocSiteBanner.titleRo, pocSiteBanner.titleEn)}
     >
       <span className="status-dot" aria-hidden />

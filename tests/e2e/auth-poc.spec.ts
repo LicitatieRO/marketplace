@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { switchPocDemoPersona } from "./helpers/poc-demo-switcher";
+import { isStagingDemoBannerEnabled } from "@/lib/server/demo-banner";
 
 test.describe("auth/legal POC (configured backend)", () => {
   test.skip(
@@ -18,6 +19,16 @@ test.describe("auth/legal POC (configured backend)", () => {
   test("persistent POC banner and legal pages render", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByTestId("poc-simulation-banner")).toBeVisible();
+    const stagingDemoExpected = isStagingDemoBannerEnabled("localhost:3000");
+    const stagingDemoBanner = page.getByTestId("staging-demo-banner");
+    if (stagingDemoExpected) {
+      await expect(stagingDemoBanner).toBeVisible();
+      await expect(stagingDemoBanner).toContainText("simulate", {
+        ignoreCase: true,
+      });
+    } else {
+      await expect(stagingDemoBanner).toHaveCount(0);
+    }
     await page.goto("/legal/terms");
     await expect(
       page.getByRole("heading", { name: "Termeni de utilizare (POC)" }),

@@ -187,6 +187,7 @@ jobs:
             printf 'POC_BUYER_PASSWORD=%s\n' "$e2e_password"
             printf 'POC_DUAL_PASSWORD=%s\n' "$e2e_password"
             printf 'POC_SWITCHER_ENABLED=true\n'
+            printf 'DEMO_BANNER=1\n'
           } >> "$GITHUB_ENV"
       - name: Write ignored local environment without printing credentials
         if: steps.classify.outputs.backend-mode != 'skip'

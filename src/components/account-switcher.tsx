@@ -94,6 +94,7 @@ export function AccountSwitcher({
       ref={rootRef}
       className="demo-switcher-fab"
       data-testid="poc-account-switcher"
+      data-tour="persona-switcher"
     >
       <button
         type="button"

@@ -4,10 +4,12 @@ import type {
   RepesAuctionListResponse,
   RepesAuctionEntry,
 } from "@/lib/repes/types";
+import {
+  assertRepesContactConfigured,
+  buildRepesHttpUserAgent,
+} from "@/lib/server/repes-contact";
 
 export const REPES_API_BASE = "https://prod.executori.ro/repes/api";
-export const REPES_HTTP_USER_AGENT =
-  "LicitatieRO-POC/0.1 (+https://github.com/LicitatieRO/marketplace; contact: privacy)";
 export const REPES_FETCH_MAX_PAGES = 3;
 export const REPES_FETCH_MAX_ENTRIES = 75;
 export const REPES_FETCH_TIMEOUT_MS = 30_000;
@@ -39,6 +41,8 @@ export async function fetchRepesAuctionPage(
     return loadSyntheticRepesFixture();
   }
 
+  assertRepesContactConfigured({ useFixture: false });
+
   const now = Date.now();
   const wait = MIN_INTERVAL_MS - (now - lastFetchAt);
   if (wait > 0) {
@@ -59,7 +63,7 @@ export async function fetchRepesAuctionPage(
         method: "GET",
         headers: {
           Accept: "application/json",
-          "User-Agent": REPES_HTTP_USER_AGENT,
+          "User-Agent": buildRepesHttpUserAgent(),
         },
         signal,
         next: { revalidate: 0 },

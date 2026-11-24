@@ -6,6 +6,7 @@ import {
   fetchRepesAuctionPages,
 } from "@/lib/server/repes-client";
 import { hashRepesCaseId } from "@/lib/server/repes-case-id-hash";
+import { assertRepesContactConfigured } from "@/lib/server/repes-contact";
 import { serviceRoleClient } from "@/lib/server/service-role";
 
 export type RepesIngestSummary = {
@@ -20,6 +21,7 @@ export async function runRepesIngest(options: {
   useFixture?: boolean;
   maxPages?: number;
 }): Promise<RepesIngestSummary> {
+  assertRepesContactConfigured({ useFixture: options.useFixture });
   const pages = await fetchRepesAuctionPages({
     useFixture: options.useFixture,
     maxPages: options.maxPages,

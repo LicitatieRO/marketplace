@@ -1,13 +1,14 @@
 /**
- * DSA notice-and-action entry point (same flow as listing illegal-content reports).
- * Uses a platform anchor listing id; the reporter describes the external notice in the explanation field.
+ * DSA notice-and-action form (posts to POST /api/dsa-notices via DsaReportForm).
+ * Anchor listing_id satisfies DSA schema; external_source_id is carried in the explanation.
  */
 export function externalAuctionDsaReportHref(
   anchorListingId: string,
   externalSourceId: string,
 ): string {
   const params = new URLSearchParams({
+    listing_id: anchorListingId,
     external_source_id: externalSourceId,
   });
-  return `/listings/${anchorListingId}/report?${params.toString()}`;
+  return `/dsa-notices/report?${params.toString()}`;
 }

@@ -28,6 +28,22 @@ describe("auth return paths (#121)", () => {
     expect(resolveAuthIntent(listingPath, "bid")).toBe("bid");
   });
 
+  it("buildLoginBidIntentUrl sanitizes open-redirect variants", () => {
+    const safeNext = encodeURIComponent("/workspace");
+    expect(buildLoginBidIntentUrl("//evil.example")).toBe(
+      `/login?next=${safeNext}&intent=bid`,
+    );
+    expect(buildLoginBidIntentUrl("/\\evil")).toBe(
+      `/login?next=${safeNext}&intent=bid`,
+    );
+    expect(buildLoginBidIntentUrl("/%2f%2fevil.example")).toBe(
+      `/login?next=${safeNext}&intent=bid`,
+    );
+    expect(buildLoginBidIntentUrl("%2f%2fevil.example")).toBe(
+      `/login?next=${safeNext}&intent=bid`,
+    );
+  });
+
   it("rejects open-redirect variants in safeReturnPath", () => {
     expect(safeReturnPath("//evil.example")).toBe("/workspace");
     expect(safeReturnPath("/\\evil")).toBe("/workspace");

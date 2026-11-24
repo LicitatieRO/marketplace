@@ -53,12 +53,12 @@ test('unavailable clock removes live participation until a successful sync', asy
   await page.goto(`/listings/${id}`);
   const clock = page.getByTestId('auction-countdown');
   await expect(clock).toHaveAttribute('data-phase', 'live');
-  await expect(page.getByRole('link', { name: 'Sign in to participate', exact: true })).toBeVisible();
+  await expect(page.getByTestId('listing-guest-bid-login')).toBeVisible();
   await expect(page.getByTestId('auction-close-rule')).toContainText('Fixed deadline');
   unavailable = true;
   await page.clock.fastForward(15_100);
   await expect(clock).toHaveAttribute('data-phase', 'loading');
-  await expect(page.getByRole('link', { name: 'Sign in to participate', exact: true })).toHaveCount(0);
+  await expect(page.getByTestId('listing-guest-bid-login')).toHaveCount(0);
   unavailable = false;
   await page.clock.fastForward(15_100);
   await expect(clock).toHaveAttribute('data-phase', 'live');

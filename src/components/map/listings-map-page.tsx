@@ -44,6 +44,7 @@ import { notifyOptionalContentChanged } from "@/lib/optional-content-events";
 import { useAllowsOptionalContent } from "@/components/disclosures/cookie-consent-banner";
 import { LiveAuctionBidControl } from "@/components/live-auction-bid-control";
 import { placeBidAmountMinor } from "@/lib/bid-confirm-amount";
+import { buildLoginBidIntentUrl } from "@/lib/auth-return";
 import { bidGlossary } from "@/lib/bid-copy";
 import {
   mapFilterChipRent,
@@ -470,7 +471,7 @@ export function ListingsMapPage({
           <Link
             className="button primary"
             data-testid="map-guest-bid-login"
-            href={`/login?next=${encodeURIComponent(`/map?listing=${selected.id}&intent=bid`)}`}
+            href={buildLoginBidIntentUrl(`/map?listing=${selected.id}`)}
           >
             {bidTerms.signInToBid}
           </Link>

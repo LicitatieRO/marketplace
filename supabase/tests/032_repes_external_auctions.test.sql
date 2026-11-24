@@ -12,7 +12,7 @@ SELECT ok(
 );
 SELECT throws_ok(
   $$ SELECT public.upsert_external_auction_listing(
-    'repes','repes:SYNTH:1','SYNTH','1','apartment','Sector 2','București',72,10000,'RON',1000,
+    'repes','repes:SYNTH:1','SYNTH','1','real_estate','apartment','Sector 2','București',72,10000,'RON',1000,
     clock_timestamp(),'Executor POC','https://prod.executori.ro/repes/',false
   ) $$,
   'P0001',

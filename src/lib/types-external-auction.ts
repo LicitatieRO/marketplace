@@ -1,7 +1,10 @@
+import type { ExternalAuctionCategory } from "@/lib/repes/category";
+
 export type ExternalAuctionListing = {
   id: string;
   source: "repes";
   source_id: string;
+  category: ExternalAuctionCategory;
   property_type: string;
   locality_label: string;
   judet: string;

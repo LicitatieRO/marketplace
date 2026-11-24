@@ -45,6 +45,7 @@ export async function runRepesIngest(options: {
       p_source_id: row.source_id,
       p_repes_case_id: row.repes_case_id,
       p_repes_auction_id: row.repes_auction_id,
+      p_category: row.category,
       p_property_type: row.property_type,
       p_locality_label: row.locality_label,
       p_judet: row.judet,

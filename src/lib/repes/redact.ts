@@ -1,4 +1,9 @@
 import type { RepesAuctionEntry } from "@/lib/repes/types";
+import {
+  normalizeRepesEntryCategory,
+  repesPropertyTypeForCategory,
+  type ExternalAuctionCategory,
+} from "@/lib/repes/category";
 
 /** Allowlisted fields persisted and shown after ingest redaction. */
 export type RedactedExternalAuction = {
@@ -6,6 +11,7 @@ export type RedactedExternalAuction = {
   source_id: string;
   repes_case_id: string;
   repes_auction_id: string;
+  category: ExternalAuctionCategory;
   property_type: string;
   locality_label: string;
   judet: string;
@@ -30,13 +36,10 @@ const CASE_FILE_PATTERN =
   /\b\d{1,6}\s*\/\s*ex\s*\/\s*\d{4}\b|\b(?:dosar|file)\s*(?:nr\.?)?\s*[:#]?\s*[\w/-]+/giu;
 const EMAIL_PATTERN = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu;
 const PHONE_PATTERN = /(?:\+40|0)\s*[\d\s.-]{8,14}/g;
-
-const CATEGORY_TO_PROPERTY: Record<string, string> = {
-  APT: "apartment",
-  HOU: "house",
-  COM: "commercial",
-  LND: "land",
-};
+const VIN_PATTERN = /\b[A-HJ-NPR-Z0-9]{17}\b/gi;
+const PLATE_PATTERN =
+  /\b(?:nr\.?\s*)?(?:înmatriculare|inmatriculare|plate)?\s*[:\s-]*[A-Z]{1,2}[\s-]*\d{2,3}[\s-]*[A-Z]{3}\b/giu;
+const PLATE_COMPACT_PATTERN = /\b[A-Z]{1,2}\s*-?\s*\d{2,3}\s*-?\s*[A-Z]{3}\b/g;
 
 function stripSensitiveFragments(text: string): string {
   return text
@@ -45,6 +48,9 @@ function stripSensitiveFragments(text: string): string {
     .replace(CNP_PATTERN, "")
     .replace(CF_PATTERN, "")
     .replace(CASE_FILE_PATTERN, "")
+    .replace(VIN_PATTERN, "")
+    .replace(PLATE_PATTERN, "")
+    .replace(PLATE_COMPACT_PATTERN, "")
     .replace(EMAIL_PATTERN, "")
     .replace(PHONE_PATTERN, "");
 }
@@ -103,21 +109,20 @@ function issuingAuthority(entry: RepesAuctionEntry): string {
 }
 
 /**
- * Pure allowlist redaction: drops debtor/creditor identity, addresses, case ids, CF/cadastral refs.
+ * Pure allowlist redaction: drops debtor/creditor identity, addresses, case ids, CF/cadastral refs, VIN/plates.
  */
 export function redactRepesAuctionEntry(
   entry: RepesAuctionEntry,
 ): RedactedExternalAuction | null {
   if (!entry.id || !entry.caseId) return null;
-  if (entry.asset?.type && entry.asset.type !== "IMO") return null;
 
-  const category = entry.asset?.category ?? "";
-  const propertyType = CATEGORY_TO_PROPERTY[category];
-  if (!propertyType) return null;
+  const listingCategory = normalizeRepesEntryCategory(entry);
+  if (!listingCategory) return null;
 
   const county =
     entry.asset?.address?.county ??
     entry.asset?.address?.region ??
+    entry.address?.county ??
     "București";
   const judet = county.trim() || "București";
 
@@ -134,16 +139,22 @@ export function redactRepesAuctionEntry(
   if (!auctionAt) return null;
 
   const withdrawn = (entry.status ?? "").toUpperCase() !== "ACT";
+  const propertyType = repesPropertyTypeForCategory(
+    listingCategory,
+    entry.asset?.category,
+  );
 
   return {
     source: "repes",
     source_id: `repes:${entry.caseId}:${entry.id}`,
     repes_case_id: entry.caseId,
     repes_auction_id: entry.id,
+    category: listingCategory,
     property_type: propertyType,
     locality_label: localityFromEntry(entry),
     judet,
-    area_sqm: parseAreaSqm(entry),
+    area_sqm:
+      listingCategory === "real_estate" ? parseAreaSqm(entry) : null,
     price_minor: priceMinor,
     currency,
     guarantee_minor: guaranteeMinor,

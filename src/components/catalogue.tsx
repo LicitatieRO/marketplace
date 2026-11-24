@@ -20,8 +20,7 @@ import {
 } from "lucide-react";
 import type { Listing, TransactionType } from "@/lib/types";
 import type { ExternalAuctionListing } from "@/lib/types-external-auction";
-import { ExternalAuctionCard } from "@/components/external-auction-card";
-import { externalAuctionRankingLine } from "@/lib/external-auction-copy";
+import { ExternalAuctionsSection } from "@/components/external-auctions-section";
 import { legalCatalogueAuctionBadge } from "@/lib/bid-copy";
 import { heroMapCta, heroSubline, listingTitle, tourUi } from "@/lib/i18n";
 import { CatalogueCardAuctionMeta } from "./catalogue-card-auction-meta";
@@ -328,26 +327,7 @@ export function Catalogue({
           )}
         </div>
         {externalAuctions && externalAuctions.length > 0 ? (
-          <section
-            className="external-auction-section"
-            aria-labelledby="external-auction-heading"
-            data-testid="external-auction-section"
-          >
-            <div className="eyebrow">
-              {t("LICITAȚII REALE (EXTERN)", "REAL EXTERNAL AUCTIONS")}
-            </div>
-            <h2 id="external-auction-heading">
-              {t("Licitații reale, externe", "Real external auctions")}
-            </h2>
-            <p className="external-auction-ranking">
-              {externalAuctionRankingLine(language)}
-            </p>
-            <div className="property-grid external-auction-grid">
-              {externalAuctions.map((row) => (
-                <ExternalAuctionCard key={row.source_id} listing={row} />
-              ))}
-            </div>
-          </section>
+          <ExternalAuctionsSection listings={externalAuctions} />
         ) : null}
         <div id="results" className="results-heading">
           <div>

@@ -27,10 +27,8 @@ export function repesEntryCounty(entry: RepesAuctionEntry): string | null {
   );
 }
 
+/** Geography gate: Bucharest + Ilfov only, all REPES asset classes. */
 export function isBucharestIlfovRepesEntry(entry: RepesAuctionEntry): boolean {
-  if (entry.asset?.type && entry.asset.type !== "IMO") return false;
-  const category = entry.asset?.category ?? "";
-  if (!["APT", "HOU", "COM", "LND"].includes(category)) return false;
   return isBucharestIlfovCounty(repesEntryCounty(entry));
 }
 

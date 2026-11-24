@@ -17,17 +17,19 @@ describe("Bucharest/Ilfov REPES filter", () => {
     expect(isBucharestIlfovCounty("Timiș")).toBe(false);
   });
 
-  it("keeps only Bucharest/Ilfov IMO property rows", () => {
+  it("keeps Bucharest/Ilfov rows across all asset classes", () => {
     const filtered = filterBucharestIlfovRepesEntries(entries);
-    expect(filtered).toHaveLength(3);
+    expect(filtered).toHaveLength(5);
     expect(filtered.every(isBucharestIlfovRepesEntry)).toBe(true);
   });
 
-  it("excludes non-IMO or other counties", () => {
+  it("excludes other counties", () => {
     const otherCounty: RepesAuctionEntry = {
       ...entries[0],
       asset: {
         ...entries[0].asset!,
+        type: "AUT",
+        category: "CAR",
         address: { city: "Timisoara", county: "Timis" },
       },
     };

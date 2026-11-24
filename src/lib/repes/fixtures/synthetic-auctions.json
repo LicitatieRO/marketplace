@@ -1,5 +1,5 @@
 {
-  "totalCount": 3,
+  "totalCount": 5,
   "entries": [
     {
       "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -80,6 +80,50 @@
         },
         "price": { "value": 100000, "currency": "RON" },
         "guarantee": { "value": 10000, "currency": "RON" }
+      }
+    },
+    {
+      "id": "dddddddddddddddddddddddddddddddd",
+      "caseId": "SYNTH_000004",
+      "date": "2026-12-20T09:30",
+      "status": "ACT",
+      "asset": {
+        "id": "dddddddddddddddddddddddddddddddd",
+        "name": "Autoturism VIN 1HGBH41JXMN109186 plate B 123 ABC",
+        "type": "AUT",
+        "category": "CAR",
+        "address": {
+          "city": "Bucuresti",
+          "county": "Bucuresti",
+          "region": "Sector 4"
+        },
+        "description": "Vehicul înmatriculat IF 12 XYZ seria 2T1BURHE0JC123456",
+        "guarantee": { "value": 1500, "currency": "RON" },
+        "price": { "value": 15000, "currency": "RON" }
+      },
+      "auctioneer": {
+        "organisation": {
+          "name": "Executor Auto POC"
+        }
+      }
+    },
+    {
+      "id": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "caseId": "SYNTH_000005",
+      "date": "2026-12-22T14:00",
+      "status": "ACT",
+      "asset": {
+        "id": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "name": "Utilaj industrial",
+        "type": "MAS",
+        "category": "EQP",
+        "address": {
+          "city": "Otopeni",
+          "county": "Ilfov"
+        },
+        "description": "CNC model X fără date personale",
+        "price": { "value": 80000, "currency": "RON" },
+        "guarantee": { "value": 8000, "currency": "RON" }
       }
     }
   ]

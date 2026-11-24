@@ -15,6 +15,7 @@ function fixtureListings(): ExternalAuctionListing[] {
       id: `fixture-repes-${index + 1}`,
       source: row.source,
       source_id: row.source_id,
+      category: row.category,
       property_type: row.property_type,
       locality_label: row.locality_label,
       judet: row.judet,

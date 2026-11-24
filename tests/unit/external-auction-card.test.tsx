@@ -10,6 +10,7 @@ const listing: ExternalAuctionListing = {
   id: "11111111-1111-4111-8111-111111111111",
   source: "repes",
   source_id: "repes:SYNTH:1",
+  category: "real_estate",
   property_type: "apartment",
   locality_label: "Sector 2",
   judet: "București",

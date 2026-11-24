@@ -30,13 +30,16 @@ type Props = {
   reportHref?: string;
 };
 
-function propertyTypeLabel(
-  propertyType: string,
+function assetTitle(
+  listing: ExternalAuctionListing,
   t: (ro: string, en: string) => string,
 ): string {
-  if (propertyType === "house") return t("Casă", "House");
-  if (propertyType === "land") return t("Teren", "Land");
-  if (propertyType === "commercial") return t("Comercial", "Commercial");
+  if (listing.category === "vehicle") return t("Vehicul", "Vehicle");
+  if (listing.category === "equipment") return t("Utilaj / echipament", "Equipment");
+  if (listing.category === "other") return t("Bun mobil", "Movable asset");
+  if (listing.property_type === "house") return t("Casă", "House");
+  if (listing.property_type === "land") return t("Teren", "Land");
+  if (listing.property_type === "commercial") return t("Comercial", "Commercial");
   return t("Apartament", "Apartment");
 }
 
@@ -89,7 +92,7 @@ export function ExternalAuctionCardView({
           {listing.locality_label} <span>· {listing.judet}</span>
         </div>
         <h3 className="external-auction-title">
-          {propertyTypeLabel(listing.property_type, t)}
+          {assetTitle(listing, t)}
           {listing.area_sqm ? (
             <span className="external-auction-area"> · {listing.area_sqm} m²</span>
           ) : null}

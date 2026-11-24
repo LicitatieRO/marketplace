@@ -19,6 +19,8 @@ import {
   X,
 } from "lucide-react";
 import type { Listing, TransactionType } from "@/lib/types";
+import type { ExternalAuctionListing } from "@/lib/types-external-auction";
+import { ExternalAuctionsSection } from "@/components/external-auctions-section";
 import { legalCatalogueAuctionBadge } from "@/lib/bid-copy";
 import { heroMapCta, heroSubline, listingTitle, tourUi } from "@/lib/i18n";
 import { CatalogueCardAuctionMeta } from "./catalogue-card-auction-meta";
@@ -35,7 +37,15 @@ const CatalogueMap = dynamic(
   { ssr: false },
 );
 
-export function Catalogue({ listings }: { listings: Listing[] }) {
+export function Catalogue({
+  listings,
+  externalAuctions,
+  externalReportAnchorListingId,
+}: {
+  listings: Listing[];
+  externalAuctions?: ExternalAuctionListing[];
+  externalReportAnchorListingId?: string;
+}) {
   const { t, language, setCatalogueMapPath } = usePlatform();
   const { startTour } = useProductTour();
   const [transaction, setTransaction] = useState<TransactionType>("sale");
@@ -318,6 +328,12 @@ export function Catalogue({ listings }: { listings: Listing[] }) {
             </div>
           )}
         </div>
+        {externalAuctions && externalAuctions.length > 0 ? (
+          <ExternalAuctionsSection
+            listings={externalAuctions}
+            reportAnchorListingId={externalReportAnchorListingId}
+          />
+        ) : null}
         <div id="results" className="results-heading">
           <div>
             <div className="eyebrow">

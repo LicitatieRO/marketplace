@@ -12,9 +12,17 @@ import {
 import { dsaElementLabel, dsaReasonLabel } from '@/lib/dsa-notice-copy';
 import { dateTime } from '@/lib/format';
 
-type Props = { listingId: string; listingUrl: string };
+type Props = {
+  listingId: string;
+  listingUrl: string;
+  defaultExplanation?: string;
+};
 
-export function DsaReportForm({ listingId, listingUrl }: Props) {
+export function DsaReportForm({
+  listingId,
+  listingUrl,
+  defaultExplanation,
+}: Props) {
   const { t, language } = usePlatform();
   const [reason, setReason] = useState<DsaReason>('fraud');
   const [element, setElement] = useState<DsaElement>('whole_listing');
@@ -120,7 +128,14 @@ export function DsaReportForm({ listingId, listingUrl }: Props) {
           'Explică de ce consideri că acest conținut este ilegal. Include detaliile relevante (de ex. dovezi, legea încălcată, dacă o cunoști).',
           'Explain why you believe this content is illegal. Include relevant details (e.g. evidence, the law breached, if you know it).',
         )}
-        <textarea name="explanation" minLength={30} maxLength={5000} required rows={6} />
+        <textarea
+          name="explanation"
+          minLength={30}
+          maxLength={5000}
+          required
+          rows={6}
+          defaultValue={defaultExplanation ?? ""}
+        />
       </label>
       <label>
         {t('Nume', 'Name')}

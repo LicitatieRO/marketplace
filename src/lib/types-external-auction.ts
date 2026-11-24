@@ -1,0 +1,21 @@
+import type { ExternalAuctionCategory } from "@/lib/repes/category";
+
+export type ExternalAuctionListing = {
+  id: string;
+  source: "repes";
+  source_id: string;
+  category: ExternalAuctionCategory;
+  property_type: string;
+  locality_label: string;
+  judet: string;
+  area_sqm: number | null;
+  price_minor: number;
+  currency: string;
+  guarantee_minor: number | null;
+  auction_at: string;
+  issuing_authority: string;
+  source_url: string;
+  retrieved_at: string;
+  withdrawn: boolean;
+  ended_at_source?: boolean;
+};

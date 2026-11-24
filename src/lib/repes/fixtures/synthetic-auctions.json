@@ -1,0 +1,130 @@
+{
+  "totalCount": 5,
+  "entries": [
+    {
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "caseId": "SYNTH_000001",
+      "date": "2026-12-10T10:00",
+      "fileNo": "1234/ex/2026",
+      "publicationNo": "1",
+      "publicationDate": "2026-11-01T08:00:00.000Z",
+      "status": "ACT",
+      "asset": {
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "name": "Apartament 3 camere ~72 mp etaj 2",
+        "type": "IMO",
+        "category": "APT",
+        "address": {
+          "street": "Strada Exemplu",
+          "streetNo": "10",
+          "city": "Bucuresti",
+          "county": "Bucuresti",
+          "region": "Sector 3",
+          "originalAddress": "Debitor Popescu Ion CNP 1850315123456 str. Exemplu nr. 10"
+        },
+        "description": "Vânzare bun imobil CF nr 12345 debitoru X",
+        "guarantee": { "value": 25000, "currency": "RON" },
+        "price": { "value": 250000, "currency": "RON" },
+        "properties": [{ "name": "Suprafata utila", "value": "72 mp" }]
+      },
+      "auctioneer": {
+        "organisation": {
+          "name": "Executor Sintetic",
+          "description": "Birou executor judecătoresc POC",
+          "contactMethods": [
+            { "type": "email", "value": "office@example.test" },
+            { "type": "mobile", "value": "0700000000" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "caseId": "SYNTH_000002",
+      "date": "2026-12-15T11:00",
+      "fileNo": "5678/ex/2026",
+      "status": "ACT",
+      "asset": {
+        "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "name": "Teren intravilan",
+        "type": "IMO",
+        "category": "LND",
+        "address": {
+          "city": "Voluntari",
+          "county": "Ilfov",
+          "originalAddress": "Ilfov Voluntari"
+        },
+        "guarantee": { "value": 5000, "currency": "RON" },
+        "price": { "value": 50000, "currency": "RON" }
+      },
+      "auctioneer": {
+        "organisation": {
+          "name": "Executor Ilfov POC"
+        }
+      }
+    },
+    {
+      "id": "cccccccccccccccccccccccccccccccc",
+      "caseId": "SYNTH_000003",
+      "date": "2026-08-01T09:00",
+      "status": "INA",
+      "asset": {
+        "id": "cccccccccccccccccccccccccccccccc",
+        "name": "Apartament retras",
+        "type": "IMO",
+        "category": "APT",
+        "address": {
+          "city": "Bucuresti",
+          "county": "Bucuresti",
+          "region": "Sector 1"
+        },
+        "price": { "value": 100000, "currency": "RON" },
+        "guarantee": { "value": 10000, "currency": "RON" }
+      }
+    },
+    {
+      "id": "dddddddddddddddddddddddddddddddd",
+      "caseId": "SYNTH_000004",
+      "date": "2026-12-20T09:30",
+      "status": "ACT",
+      "asset": {
+        "id": "dddddddddddddddddddddddddddddddd",
+        "name": "Autoturism VIN 1HGBH41JXMN109186 plate B 123 ABC",
+        "type": "AUT",
+        "category": "CAR",
+        "address": {
+          "city": "Bucuresti",
+          "county": "Bucuresti",
+          "region": "Sector 4"
+        },
+        "description": "Vehicul înmatriculat IF 12 XYZ seria 2T1BURHE0JC123456",
+        "guarantee": { "value": 1500, "currency": "RON" },
+        "price": { "value": 15000, "currency": "RON" }
+      },
+      "auctioneer": {
+        "organisation": {
+          "name": "Executor Auto POC"
+        }
+      }
+    },
+    {
+      "id": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "caseId": "SYNTH_000005",
+      "date": "2026-12-22T14:00",
+      "status": "ACT",
+      "asset": {
+        "id": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "name": "Utilaj industrial",
+        "type": "MAS",
+        "category": "EQP",
+        "address": {
+          "city": "Otopeni",
+          "county": "Ilfov"
+        },
+        "description": "CNC model X fără date personale",
+        "price": { "value": 80000, "currency": "RON" },
+        "guarantee": { "value": 8000, "currency": "RON" }
+      }
+    }
+  ]
+}

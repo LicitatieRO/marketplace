@@ -3,6 +3,7 @@ import {
   advanceBidConfirmStep,
   bidConfirmPrompt,
   bidGlossary,
+  workspaceStatusLabel,
 } from "@/lib/bid-copy";
 import { placeBidAmountMinor } from "@/lib/bid-confirm-amount";
 
@@ -33,6 +34,16 @@ describe("bidGlossary simulation success copy", () => {
   it("states the bid is a simulation", () => {
     expect(bidGlossary("ro").bidRecordedSimulation).toContain("(simulare)");
     expect(bidGlossary("en").bidRecordedSimulation).toContain("(simulation)");
+  });
+});
+
+describe("workspaceStatusLabel", () => {
+  it("qualifies lifecycle states per Legal #55", () => {
+    expect(workspaceStatusLabel("signed", "ro")).toBe(
+      "Semnare simulată (ambele părți)",
+    );
+    expect(workspaceStatusLabel("sold", "en")).toBe("Marked sold (simulation)");
+    expect(workspaceStatusLabel("reserved", "ro")).toBe("Rezervare simulată");
   });
 });
 

@@ -23,7 +23,7 @@ export function ListingComparison({ options, selected, query, sampledAt, unavail
     { key: 'type', label: t('Tip proprietate', 'Property type'), cell: propertyType },
     { key: 'area-name', label: t('Zonă publică', 'Public area'), cell: (item: ComparisonListing) => [item.neighborhood, item.judet].filter(Boolean).join(' · ') || '—' },
     { key: 'tenancy', label: t('Ocupare declarată', 'Disclosed occupancy'), cell: (item: ComparisonListing) => item.tenancy === 'occupied' ? t('Ocupată', 'Occupied') : item.tenancy === 'vacant' ? t('Liberă', 'Vacant') : t('Nespecificată', 'Unspecified') },
-    { key: 'auction', label: t('Licitație · instantaneu', 'Auction · snapshot'), cell: (item: ComparisonListing) => <>{item.auctionMode === 'sealed' ? t('Oferte confidențiale · ', 'Confidential offers · ') : item.auctionMode === 'ascending' ? t('Ascendentă · ', 'Ascending · ') : ''}{auctionState(item)}</> },
+    { key: 'auction', label: t('Licitație simulată · instantaneu', 'Simulated auction · snapshot'), cell: (item: ComparisonListing) => <>{item.auctionMode === 'sealed' ? t('Oferte confidențiale (POC) · ', 'Confidential offers (POC) · ') : item.auctionMode === 'ascending' ? t('Ascendentă (simulată) · ', 'Ascending (simulated) · ') : ''}{auctionState(item)}</> },
   ];
   return <main id="main" className="workspace-page page-width">
     <span className="eyebrow">POC / Simulare</span>

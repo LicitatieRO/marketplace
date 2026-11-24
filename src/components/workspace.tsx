@@ -19,8 +19,13 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
-import type { Listing, Workspace } from "@/lib/types";
+import type { Language, Listing, Workspace } from "@/lib/types";
 import { dateTime, money } from "@/lib/format";
+import {
+  legalConfirmSimulatedSigning,
+  legalSimulatedAuctionCreatedToast,
+  workspaceStatusLabel,
+} from "@/lib/bid-copy";
 import { listingTitle } from "@/lib/i18n";
 import { Feedback, useMutation, usePlatform } from "./platform";
 import { PropertyCard } from "./catalogue";
@@ -371,7 +376,7 @@ export function WorkspaceView({
                                     : ""}
                                 </strong>
                                 <small>
-                                  {statusLabel(str(listing, "status"), t)}
+                                  {statusLabel(str(listing, "status"), language)}
                                 </small>
                               </div>
                               <Link
@@ -435,8 +440,8 @@ export function WorkspaceView({
                           <div className="row-meta">
                             <span>
                               {str(auction, "mode") === "sealed"
-                                ? t("Confidențială", "Confidential")
-                                : t("Ascendentă", "Ascending")}
+                                ? t("Confidențială (POC)", "Confidential (POC)")
+                                : t("Ascendentă (simulată)", "Ascending (simulated)")}
                             </span>
                             <span>
                               {str(auction, "access") === "invite"
@@ -444,7 +449,7 @@ export function WorkspaceView({
                                 : t("Acces public", "Public access")}
                             </span>
                             <span>
-                              {statusLabel(str(auction, "status"), t)}
+                              {statusLabel(str(auction, "status"), language)}
                             </span>
                           </div>
                           <p className="muted small">
@@ -747,7 +752,7 @@ export function WorkspaceView({
                           </h3>
                         </div>
                         <span className="badge badge-navy">
-                          {statusLabel(status, t)}
+                          {statusLabel(status, language)}
                         </span>
                       </div>
                       <p className="muted small">
@@ -807,10 +812,7 @@ export function WorkspaceView({
                                     "Confirmat · așteaptă cealaltă parte",
                                     "Confirmed · awaiting other party",
                                   )
-                                : t(
-                                    "Confirm că am semnat",
-                                    "Confirm I have signed",
-                                  )}
+                                : legalConfirmSimulatedSigning(language)}
                             </button>
                           )}
                           <button
@@ -873,7 +875,7 @@ export function WorkspaceView({
                       </strong>
                       <p>{str(viewing, "message")}</p>
                       <span className="small muted">
-                        {statusLabel(str(viewing, "status"), t)}
+                        {statusLabel(str(viewing, "status"), language)}
                       </span>
                     </div>
                     {!["cancelled", "completed"].includes(
@@ -1058,29 +1060,8 @@ function Empty({
     </div>
   );
 }
-function statusLabel(status: string, t: (ro: string, en: string) => string) {
-  const labels: Record<string, [string, string]> = {
-    active: ["Activă", "Active"],
-    published: ["Publicat", "Published"],
-    open: ["Deschisă", "Open"],
-    scheduled: ["Programată", "Scheduled"],
-    closed: ["Închisă", "Closed"],
-    ended: ["Încheiată", "Ended"],
-    requested: ["Solicitată", "Requested"],
-    pending: ["În așteptare", "Pending"],
-    funded: ["Finanțată (simulare)", "Funded (simulation)"],
-    signed: ["Semnată de ambele părți", "Signed by both parties"],
-    cancelled: ["Anulată", "Cancelled"],
-    expired: ["Expirată", "Expired"],
-    refunded: ["Rambursată (simulare)", "Refunded (simulation)"],
-    confirmed: ["Confirmată", "Confirmed"],
-    completed: ["Finalizată", "Completed"],
-    reserved: ["Rezervată", "Reserved"],
-    rented: ["Închiriată", "Rented"],
-    sold: ["Vândută", "Sold"],
-  };
-  const label = labels[status];
-  return label ? t(...label) : status;
+function statusLabel(status: string, language: Language) {
+  return workspaceStatusLabel(status, language);
 }
 function PropertyEditor({
   onSaved,
@@ -1479,7 +1460,7 @@ function AuctionEditor({
             Number(form.get("increment")) * 100,
           ),
         },
-        t("Licitația a fost creată.", "Auction created."),
+        legalSimulatedAuctionCreatedToast(language),
       )
     )
       await onSaved();
@@ -1493,7 +1474,7 @@ function AuctionEditor({
       >
         <span>
           <Plus size={18} />
-          {t("Pornește o licitație", "Start an auction")}
+          {t("Pornește o licitație simulată", "Start a simulated auction")}
         </span>
         <ChevronDown size={18} className={expanded ? "rotate" : ""} />
       </button>
@@ -1529,14 +1510,14 @@ function AuctionEditor({
               >
                 <option value="ascending">
                   {t(
-                    "Ascendentă · oferte publice",
-                    "Ascending · public amounts",
+                    "Ascendentă (simulată) · oferte publice",
+                    "Ascending (simulated) · public amounts",
                   )}
                 </option>
                 <option value="sealed">
                   {t(
-                    "Confidențială · oferte sigilate",
-                    "Sealed · confidential amounts",
+                    "Confidențială (POC) · oferte sigilate",
+                    "Sealed (POC) · confidential amounts",
                   )}
                 </option>
               </select>
@@ -1600,7 +1581,7 @@ function AuctionEditor({
           <button className="button primary" disabled={mutation.busy}>
             {mutation.busy
               ? t("Se creează…", "Creating…")
-              : t("Creează licitația", "Create auction")}
+              : t("Creează licitația simulată", "Create simulated auction")}
             <ArrowUpRight size={16} />
           </button>
         </form>

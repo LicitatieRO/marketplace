@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -34,6 +35,7 @@ import {
 } from "@/components/account-switcher";
 import { TourHeaderMenu, TourMobileNav } from "@/components/tour/tour-header-menu";
 import { TourShell } from "@/components/tour/tour-shell";
+import { createMutationInflightGuard } from "@/lib/mutation-inflight";
 type Theme = "system" | "light" | "dark";
 type Platform = {
   language: Language;
@@ -358,6 +360,7 @@ export function Feedback({
 }
 export function useMutation() {
   const { t, language } = usePlatform();
+  const inFlightGuardRef = useRef(createMutationInflightGuard());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -370,6 +373,7 @@ export function useMutation() {
     payload: Record<string, unknown>,
     success?: string,
   ) {
+    if (!inFlightGuardRef.current.tryAcquire()) return false;
     setBusy(true);
     setError("");
     setMessage("");
@@ -418,6 +422,7 @@ export function useMutation() {
       );
       return false;
     } finally {
+      inFlightGuardRef.current.release();
       setBusy(false);
     }
   }

@@ -1,0 +1,86 @@
+{
+  "totalCount": 3,
+  "entries": [
+    {
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "caseId": "SYNTH_000001",
+      "date": "2026-12-10T10:00",
+      "fileNo": "1234/ex/2026",
+      "publicationNo": "1",
+      "publicationDate": "2026-11-01T08:00:00.000Z",
+      "status": "ACT",
+      "asset": {
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "name": "Apartament 3 camere ~72 mp etaj 2",
+        "type": "IMO",
+        "category": "APT",
+        "address": {
+          "street": "Strada Exemplu",
+          "streetNo": "10",
+          "city": "Bucuresti",
+          "county": "Bucuresti",
+          "region": "Sector 3",
+          "originalAddress": "Debitor Popescu Ion CNP 1850315123456 str. Exemplu nr. 10"
+        },
+        "description": "Vânzare bun imobil CF nr 12345 debitoru X",
+        "guarantee": { "value": 25000, "currency": "RON" },
+        "price": { "value": 250000, "currency": "RON" },
+        "properties": [{ "name": "Suprafata utila", "value": "72 mp" }]
+      },
+      "auctioneer": {
+        "organisation": {
+          "name": "Executor Sintetic",
+          "description": "Birou executor judecătoresc POC",
+          "contactMethods": [
+            { "type": "email", "value": "office@example.test" },
+            { "type": "mobile", "value": "0700000000" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "caseId": "SYNTH_000002",
+      "date": "2026-12-15T11:00",
+      "fileNo": "5678/ex/2026",
+      "status": "ACT",
+      "asset": {
+        "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "name": "Teren intravilan",
+        "type": "IMO",
+        "category": "LND",
+        "address": {
+          "city": "Voluntari",
+          "county": "Ilfov",
+          "originalAddress": "Ilfov Voluntari"
+        },
+        "guarantee": { "value": 5000, "currency": "RON" },
+        "price": { "value": 50000, "currency": "RON" }
+      },
+      "auctioneer": {
+        "organisation": {
+          "name": "Executor Ilfov POC"
+        }
+      }
+    },
+    {
+      "id": "cccccccccccccccccccccccccccccccc",
+      "caseId": "SYNTH_000003",
+      "date": "2026-08-01T09:00",
+      "status": "INA",
+      "asset": {
+        "id": "cccccccccccccccccccccccccccccccc",
+        "name": "Apartament retras",
+        "type": "IMO",
+        "category": "APT",
+        "address": {
+          "city": "Bucuresti",
+          "county": "Bucuresti",
+          "region": "Sector 1"
+        },
+        "price": { "value": 100000, "currency": "RON" },
+        "guarantee": { "value": 10000, "currency": "RON" }
+      }
+    }
+  ]
+}

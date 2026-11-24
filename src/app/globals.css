@@ -1266,6 +1266,19 @@ input::-webkit-inner-spin-button {
   background: #e5e4d9;
   min-height: 165px;
 }
+.listing-detail-map-visual {
+  position: relative;
+  overflow: hidden;
+  background: var(--soft);
+  min-height: 165px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.listing-detail-map-placeholder {
+  padding: 8px;
+}
 .map-street {
   position: absolute;
   background: #f9f7f1;

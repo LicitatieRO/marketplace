@@ -19,12 +19,18 @@ import {
   LockKeyhole,
   MapPin,
   Maximize2,
+  FileText,
   MessageCircle,
   ShieldCheck,
   Square,
   X,
 } from "lucide-react";
 import type { Listing } from "@/lib/types";
+import {
+  listingDocumentQualificationRow,
+  listingOwnerChannelBullet,
+} from "@/lib/listing-detail-facts";
+import { formatPricePerSqm } from "@/lib/listing-price-per-sqm";
 import { listingDescription, listingTitle } from "@/lib/i18n";
 import { dateTime, money } from "@/lib/format";
 import {
@@ -33,6 +39,7 @@ import {
 import { openCookiePreferences } from "@/lib/optional-content-events";
 import { Feedback, useMutation, usePlatform } from "./platform";
 import { AuctionCountdown, useAuctionCountdown } from "./auction-countdown";
+import { ListingDetailMap } from "./map/listing-detail-map";
 import { buildAccountSignInUrl } from "@/lib/security";
 export function ListingDetail({ listing }: { listing: Listing }) {
   const { language, t, configured, viewer, favorites, setFavoriteSaved } =
@@ -128,6 +135,12 @@ export function ListingDetail({ listing }: { listing: Listing }) {
     listing.current_bid_minor !== null
       ? listing.current_bid_minor + (listing.min_increment_minor || 0)
       : listing.starting_price_minor || listing.price_minor;
+  const pricePerSqmLabel = formatPricePerSqm(
+    listing.price_minor,
+    listing.area_sqm,
+    language,
+    listing.transaction_type,
+  );
   const submitBid = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -317,6 +330,13 @@ export function ListingDetail({ listing }: { listing: Listing }) {
               <strong>{listing.area_sqm} m²</strong>
               <span>{t("suprafață utilă", "usable area")}</span>
             </div>
+            {pricePerSqmLabel ? (
+              <div data-testid="listing-price-per-sqm">
+                <Square />
+                <strong>{pricePerSqmLabel}</strong>
+                <span>{t("preț pe m²", "price per m²")}</span>
+              </div>
+            ) : null}
             <div>
               <KeyRound />
               <strong>
@@ -357,11 +377,18 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                     )
                   : t("Fără chiriaș", "Vacant property")}
               </span>
-              <span>
-                <ShieldCheck size={15} />
+              <span data-testid="listing-owner-channel-bullet">
+                <MessageCircle size={15} />
                 {t(
-                  "Discuții direct cu proprietarul",
-                  "Talk directly to the owner",
+                  listingOwnerChannelBullet.ro,
+                  listingOwnerChannelBullet.en,
+                )}
+              </span>
+              <span data-testid="listing-document-qualification-row">
+                <FileText size={15} />
+                {t(
+                  listingDocumentQualificationRow.ro,
+                  listingDocumentQualificationRow.en,
                 )}
               </span>
             </div>
@@ -374,15 +401,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
               )}
             </h3>
             <div className="neighborhood-card">
-              <div className="neighborhood-visual" aria-hidden="true">
-                <span className="map-street street-a" />
-                <span className="map-street street-b" />
-                <span className="map-street street-c" />
-                <span className="map-park" />
-                <span className="map-pin">
-                  <MapPin size={27} />
-                </span>
-              </div>
+              <ListingDetailMap listing={listing} />
               <div>
                 <span className="eyebrow">
                   {t("ZONĂ APROXIMATIVĂ", "APPROXIMATE AREA")}

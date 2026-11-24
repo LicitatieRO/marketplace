@@ -1,7 +1,7 @@
 import type { AuctionMode, Language } from "./types";
 import { translate } from "./i18n";
 
-/** Shared RO/EN glossary for bidding (P1-7). */
+/** Shared RO/EN glossary for bid confirm flows (#120, aligned with #182). */
 export function bidGlossary(language: Language) {
   return {
     placeBid: translate(language, "Licitează", "Place bid"),
@@ -13,7 +13,7 @@ export function bidGlossary(language: Language) {
     cancel: translate(language, "Anulează", "Cancel"),
     signInToBid: translate(
       language,
-      "Intră în cont ca să licitezi",
+      "Autentifică-te pentru a licita",
       "Sign in to bid",
     ),
     bidAmountLabel: translate(language, "Sumă ofertă (EUR)", "Bid amount (EUR)"),
@@ -27,25 +27,17 @@ export function bidGlossary(language: Language) {
       ),
     bidRecordedSimulation: translate(
       language,
-      "Oferta (simulare) a fost înregistrată.",
+      "Oferta ta (simulare) a fost înregistrată.",
       "Your bid (simulation) has been recorded.",
+    ),
+    pocSimulare: "POC / Simulare",
+    incrementChipsAria: translate(
+      language,
+      "Pași rapizi pentru suma ofertei",
+      "Quick bid amount steps",
     ),
     minimumIncrement: translate(language, "Pas minim:", "Minimum increment:"),
   };
-}
-
-export function legalAuctionBadge(mode: AuctionMode, language: Language) {
-  return mode === "sealed"
-    ? translate(
-        language,
-        "OFERTE CONFIDENȚIALE (POC)",
-        "CONFIDENTIAL OFFERS (POC)",
-      )
-    : translate(
-        language,
-        "LICITAȚIE SIMULATĂ (POC)",
-        "SIMULATED AUCTION (POC)",
-      );
 }
 
 export function legalCatalogueAuctionBadge(
@@ -63,22 +55,6 @@ export function legalCatalogueAuctionBadge(
         "Licitație simulată (POC)",
         "Simulated auction (POC)",
       );
-}
-
-export function legalOfferFineprint(language: Language) {
-  return translate(
-    language,
-    "Oferte simulate, neangajante; nu se percep garanții. Nu este o licitație publică sau o executare silită și nu transferă proprietatea. Proprietarul poate selecta o ofertă după închidere. Invitația și validarea contului sunt necesare unde se aplică. Ora și eligibilitatea sunt verificate de server.",
-    "Simulated, non-binding offers; no bid bonds or deposits are taken. This is not a public or enforcement auction and does not transfer title. The owner may select an offer after closing. An invitation and verified account are required where applicable. The server verifies timing and eligibility.",
-  );
-}
-
-export function legalSimulationScopeNote(language: Language) {
-  return translate(
-    language,
-    "Licitațiile, ofertele și rezervările sunt doar simulate. Fără plăți, garanții, portofel sau transfer de bani reali.",
-    "Auctions, offers and reservations are simulation only. No payments, bid bonds, wallet, or real money transfers.",
-  );
 }
 
 export function bidConfirmPrompt(

@@ -1,6 +1,13 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import {
+  authBidIntentNotice,
+  classifyPostAuthDestination,
+  postAuthCtaLabel,
+  resolveAuthIntent,
+  shouldRedirectAfterAuth,
+} from "@/lib/auth-return";
 import { safeReturnPath } from "@/lib/security";
 import { localizedMessage } from "@/lib/i18n";
 import Link from "next/link";
@@ -32,10 +39,18 @@ export function Account({ initialMode = "login" }: { initialMode?: Mode }) {
     searchParams.get("next"),
     searchParams.get("redirectTo"),
   );
+  const authIntent = resolveAuthIntent(returnTo, searchParams.get("intent"));
+  const bidIntent = authIntent === "bid";
+  const postAuthDestination = classifyPostAuthDestination(returnTo);
+  const postAuthCta = postAuthCtaLabel[postAuthDestination];
   const changeMode = (next: Mode) => {
     setMode(next);
     setError("");
     setMessage("");
+    const qs = new URLSearchParams({ mode: next, next: returnTo });
+    const intent = searchParams.get("intent");
+    if (intent) qs.set("intent", intent);
+    router.replace(`/account?${qs.toString()}`);
   };
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -82,7 +97,19 @@ export function Account({ initialMode = "login" }: { initialMode?: Mode }) {
         ),
       );
       await refreshSession();
-      if (mode === "login") router.push(returnTo);
+      let hasSession = false;
+      if (mode === "login" || mode === "signup") {
+        try {
+          const sessionResponse = await fetch("/api/session", {
+            cache: "no-store",
+          });
+          const sessionBody = await sessionResponse.json();
+          hasSession = Boolean(sessionBody.data);
+        } catch {
+          hasSession = false;
+        }
+      }
+      if (shouldRedirectAfterAuth(mode, hasSession)) router.push(returnTo);
     } catch (err) {
       setError(
         err instanceof Error
@@ -190,8 +217,20 @@ export function Account({ initialMode = "login" }: { initialMode?: Mode }) {
             <p className="muted small">
               {t(accountVerificationPoc.ro, accountVerificationPoc.en)}
             </p>
-            <Link className="button primary" href={returnTo}>
-              {t("Mergi în spațiul tău", "Go to your workspace")}
+            {bidIntent ? (
+              <p
+                className="muted small"
+                data-testid="auth-bid-intent-notice"
+              >
+                {t(authBidIntentNotice.ro, authBidIntentNotice.en)}
+              </p>
+            ) : null}
+            <Link
+              className="button primary"
+              href={returnTo}
+              data-testid="auth-post-sign-in-cta"
+            >
+              {t(postAuthCta.ro, postAuthCta.en)}
               <ArrowRight size={16} />
             </Link>
             <button className="text-button" onClick={logout} disabled={busy}>
@@ -267,6 +306,14 @@ export function Account({ initialMode = "login" }: { initialMode?: Mode }) {
                         "Your saved homes and conversations are waiting.",
                       )}
             </p>
+            {bidIntent && (mode === "login" || mode === "signup") ? (
+              <p
+                className="muted small"
+                data-testid="auth-bid-intent-notice"
+              >
+                {t(authBidIntentNotice.ro, authBidIntentNotice.en)}
+              </p>
+            ) : null}
             {mode === "reset" && viewer?.email ? (
               <p
                 className="muted small"

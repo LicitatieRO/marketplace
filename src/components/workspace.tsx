@@ -254,6 +254,7 @@ export function WorkspaceView({
         </button>
         <button
           className={tab === "owner" ? "active" : ""}
+          data-tour="workspace-owner-tab"
           onClick={() => {
             setTab("owner");
             setSection("activity");
@@ -287,6 +288,7 @@ export function WorkspaceView({
                 </div>
                 <button
                   className="button primary"
+                  data-tour="owner-add-property"
                   onClick={() => {
                     setEditingProperty(null);
                     setEditor(!editor);
@@ -511,7 +513,7 @@ export function WorkspaceView({
               {data.auctions.filter(auction => auction.mode === 'sealed' && auction.owner_id === viewer.id).map(auction => (
                 <SealedOfferComparison key={str(auction, 'id')} auctionId={str(auction, 'id')} title={listingName(str(auction, 'listing_id'))} />
               ))}
-              <section className="workspace-section">
+              <section className="workspace-section" data-tour="owner-offers">
                 <h2>{t("Oferte primite", "Received offers")}</h2>
                 <p className="muted small">
                   {t(
@@ -1303,7 +1305,7 @@ function PropertyEditor({
           />
         </label>
       </div>
-      <div className="dual-price-box">
+      <div className="dual-price-box" data-tour="wizard-dual-price">
         <div>
           <h4>
             {t(

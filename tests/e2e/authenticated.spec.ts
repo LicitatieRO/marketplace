@@ -110,6 +110,102 @@ test("owner signs in, creates linked listings, edits property, and signs out", a
     page.getByRole("heading", { name: "Intră în cont", exact: true }),
   ).toBeVisible();
 });
+test("property bid opens confirm; cancel sends nothing", async ({
+  page,
+  request,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "desktop",
+    "Run confirm-cancel once against the shared database",
+  );
+  test.skip(
+    !process.env.E2E_OWNER_EMAIL ||
+      !process.env.E2E_BUYER_EMAIL ||
+      !process.env.E2E_PASSWORD,
+    "Set local owner and buyer credentials",
+  );
+  test.setTimeout(60_000);
+  const origin = String(testInfo.project.use.baseURL);
+  const headers = { Origin: origin };
+  const login = await request.post("/api/auth", {
+    headers,
+    data: {
+      action: "login",
+      email: process.env.E2E_OWNER_EMAIL,
+      password: process.env.E2E_PASSWORD,
+    },
+  });
+  expect(login.status()).toBe(200);
+  const created = await request.post("/api/marketplace", {
+    headers,
+    data: {
+      action: "create_property",
+      payload: {
+        p_title: `Cancel confirm fixture ${Date.now()}`,
+        p_description: "Bid confirm cancel fixture.",
+        p_neighborhood: "Bucureștii Noi",
+        p_exact_address: "Private cancel-fixture address",
+        p_property_type: "apartment",
+        p_area_sqm: 70,
+        p_rooms: 3,
+        p_floor: 2,
+        p_built_year: 2020,
+        p_sale_price_minor: 10000000,
+        p_rent_price_minor: null,
+        p_image_urls: [
+          "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1200&q=85",
+        ],
+      },
+    },
+  });
+  expect(created.status()).toBe(200);
+  const property = (await created.json()).data;
+  const catalogue = (await (await request.get("/api/catalogue")).json()).data;
+  const listing = catalogue.find(
+    (item: { property_id: string }) => item.property_id === property.id,
+  );
+  expect(listing).toBeTruthy();
+  const auctionResponse = await request.post("/api/marketplace", {
+    headers,
+    data: {
+      action: "start_auction",
+      payload: {
+        p_listing_id: listing.id,
+        p_mode: "ascending",
+        p_access: "public",
+        p_starts_at: new Date(Date.now() - 1000).toISOString(),
+        p_ends_at: new Date(Date.now() + 120_000).toISOString(),
+        p_starting_price_minor: 10000000,
+        p_min_increment_minor: 10000,
+      },
+    },
+  });
+  expect(auctionResponse.status()).toBe(200);
+  await page.goto("/account");
+  await page.getByLabel("Adresa de email").fill(process.env.E2E_BUYER_EMAIL!);
+  await page
+    .getByLabel("Parola", { exact: true })
+    .fill(process.env.E2E_PASSWORD!);
+  await page
+    .getByRole("button", { name: "Intră în cont", exact: true })
+    .click();
+  await expect(page).toHaveURL(/workspace/);
+  await page.goto(`/listings/${listing.id}`);
+  await expect(page.getByTestId("auction-countdown")).toHaveAttribute(
+    "data-phase",
+    "live",
+    { timeout: 15_000 },
+  );
+  await expect(page.getByTestId("listing-place-bid")).toBeVisible();
+  await page.getByTestId("listing-bid-inc-1").click();
+  await page.getByTestId("listing-place-bid").click();
+  await expect(page.getByTestId("listing-bid-confirm-panel")).toBeVisible();
+  await page.getByTestId("listing-bid-confirm-cancel").click();
+  await expect(page.getByTestId("listing-bid-confirm-panel")).toHaveCount(0);
+  await expect(
+    page.locator(".feedback.success").filter({ hasText: "înregistrată" }),
+  ).toHaveCount(0);
+});
 test("buyer bids, messages, views, saves, and confirms a simulated reservation", async ({
   page,
   request,
@@ -198,15 +294,16 @@ test("buyer bids, messages, views, saves, and confirms a simulated reservation",
   await expect(page.getByTestId("auction-countdown")).toHaveAttribute(
     "data-phase",
     "live",
+    { timeout: 15_000 },
   );
   await expect(page.getByTestId("listing-place-bid")).toBeVisible();
-  await page.getByTestId("listing-bid-amount").fill("100100");
+  await page.getByLabel("Oferta ta în EUR").fill("100100");
   await page.getByTestId("listing-place-bid").click();
   await page.getByTestId("listing-bid-confirm").click();
   await expect(
     page
       .locator(".feedback.success")
-      .filter({ hasText: "Oferta (simulare) a fost înregistrată" }),
+      .filter({ hasText: "Oferta ta (simulare) a fost înregistrată" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Salvează", exact: true }).click();
   await expect(

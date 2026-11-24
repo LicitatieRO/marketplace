@@ -19,6 +19,7 @@ import {
   LockKeyhole,
   MapPin,
   Maximize2,
+  FileText,
   MessageCircle,
   ShieldCheck,
   Square,
@@ -26,22 +27,25 @@ import {
 } from "lucide-react";
 import type { Listing } from "@/lib/types";
 import {
-  bidGlossary,
-  legalAuctionBadge,
-  legalOfferFineprint,
-  legalSimulationScopeNote,
-} from "@/lib/bid-copy";
-import { placeBidAmountMinor } from "@/lib/bid-confirm-amount";
+  listingDocumentQualificationRow,
+  listingOwnerChannelBullet,
+} from "@/lib/listing-detail-facts";
+import { formatPricePerSqm } from "@/lib/listing-price-per-sqm";
 import { listingDescription, listingTitle } from "@/lib/i18n";
 import { dateTime, money } from "@/lib/format";
 import {
   useAllowsOptionalContent,
 } from "@/components/disclosures/cookie-consent-banner";
 import { openCookiePreferences } from "@/lib/optional-content-events";
+import { LiveAuctionBidControl } from "@/components/live-auction-bid-control";
+import { placeBidAmountMinor } from "@/lib/bid-confirm-amount";
+import { bidGlossary } from "@/lib/bid-copy";
+import { formatMapEndedCardLine } from "@/lib/map-listing-time";
+import { buildLoginBidIntentUrl } from "@/lib/auth-return";
+import { useListingBidViewerFlags } from "@/lib/listing-bid-viewer-state";
 import { Feedback, useMutation, usePlatform } from "./platform";
 import { AuctionCountdown, useAuctionCountdown } from "./auction-countdown";
-import { BidConfirmPanel } from "./bid-confirm-panel";
-import { buildAccountSignInUrl } from "@/lib/security";
+import { ListingDetailMap } from "./map/listing-detail-map";
 export function ListingDetail({ listing }: { listing: Listing }) {
   const { language, t, configured, viewer, favorites, setFavoriteSaved } =
     usePlatform();
@@ -133,16 +137,37 @@ export function ListingDetail({ listing }: { listing: Listing }) {
   );
   const canWrite = configured && !!viewer;
   const bidTerms = bidGlossary(language);
-  const [confirmAmountMinor, setConfirmAmountMinor] = useState<number | null>(
-    null,
-  );
   const minimum =
     listing.current_bid_minor !== null
       ? listing.current_bid_minor + (listing.min_increment_minor || 0)
       : listing.starting_price_minor || listing.price_minor;
+  const pricePerSqmLabel = formatPricePerSqm(
+    listing.price_minor,
+    listing.area_sqm,
+    language,
+    listing.transaction_type,
+  );
+  const [bidAmountMinor, setBidAmountMinor] = useState<number | null>(null);
+  const [confirmAmountMinor, setConfirmAmountMinor] = useState<number | null>(
+    null,
+  );
+  const effectiveBidMinor = bidAmountMinor ?? minimum;
+  const viewerBidFlags = useListingBidViewerFlags(
+    listing.id,
+    Boolean(viewer && !isOwner && listing.auction_id && auctionLive),
+  );
+  useEffect(() => {
+    queueMicrotask(() => {
+      setBidAmountMinor(null);
+      setConfirmAmountMinor(null);
+    });
+  }, [minimum, listing.current_bid_minor, listing.id]);
   const submitBid = async () => {
     if (!listing.auction_id) return;
-    const amountMinor = placeBidAmountMinor(confirmAmountMinor);
+    const amountMinor = placeBidAmountMinor(
+      confirmAmountMinor,
+      effectiveBidMinor,
+    );
     if (amountMinor === null) return;
     if (
       await mutation.mutate(
@@ -155,6 +180,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
       )
     ) {
       setConfirmAmountMinor(null);
+      viewerBidFlags.refresh();
       router.refresh();
     }
   };
@@ -332,6 +358,13 @@ export function ListingDetail({ listing }: { listing: Listing }) {
               <strong>{listing.area_sqm} m²</strong>
               <span>{t("suprafață utilă", "usable area")}</span>
             </div>
+            {pricePerSqmLabel ? (
+              <div data-testid="listing-price-per-sqm">
+                <Square />
+                <strong>{pricePerSqmLabel}</strong>
+                <span>{t("preț pe m²", "price per m²")}</span>
+              </div>
+            ) : null}
             <div>
               <KeyRound />
               <strong>
@@ -372,11 +405,18 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                     )
                   : t("Fără chiriaș", "Vacant property")}
               </span>
-              <span>
-                <ShieldCheck size={15} />
+              <span data-testid="listing-owner-channel-bullet">
+                <MessageCircle size={15} />
                 {t(
-                  "Discuții direct cu proprietarul",
-                  "Talk directly to the owner",
+                  listingOwnerChannelBullet.ro,
+                  listingOwnerChannelBullet.en,
+                )}
+              </span>
+              <span data-testid="listing-document-qualification-row">
+                <FileText size={15} />
+                {t(
+                  listingDocumentQualificationRow.ro,
+                  listingDocumentQualificationRow.en,
                 )}
               </span>
             </div>
@@ -389,15 +429,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
               )}
             </h3>
             <div className="neighborhood-card">
-              <div className="neighborhood-visual" aria-hidden="true">
-                <span className="map-street street-a" />
-                <span className="map-street street-b" />
-                <span className="map-street street-c" />
-                <span className="map-park" />
-                <span className="map-pin">
-                  <MapPin size={27} />
-                </span>
-              </div>
+              <ListingDetailMap listing={listing} />
               <div>
                 <span className="eyebrow">
                   {t("ZONĂ APROXIMATIVĂ", "APPROXIMATE AREA")}
@@ -587,7 +619,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
           </section>
         </div>
         <aside className="offer-sidebar">
-          <div className="offer-panel">
+          <div className="offer-panel" data-tour="offer-panel">
             {listing.auction_id ? (
               <>
                 <div className="offer-panel-top">
@@ -595,9 +627,9 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                     className={`badge ${listing.auction_mode === "sealed" ? "badge-navy" : "badge-coral"}`}
                   >
                     <span className="status-dot" />
-                    {listing.auction_mode
-                      ? legalAuctionBadge(listing.auction_mode, language)
-                      : null}
+                    {listing.auction_mode === "sealed"
+                      ? t("OFERTE CONFIDENȚIALE", "CONFIDENTIAL OFFERS")
+                      : t("LICITAȚIE ASCENDENTĂ", "ASCENDING AUCTION")}
                   </span>
                   {listing.auction_access === "invite" && (
                     <span className="access-label">
@@ -641,6 +673,9 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                         ? money(listing.current_bid_minor, language)
                         : t("Încă nu există oferte", "No offers yet")}
                     </strong>
+                    <span className="chip poc" data-testid="listing-bid-poc-chip">
+                      {bidTerms.pocSimulare}
+                    </span>
                     <small>
                       {listing.bid_count}{" "}
                       {t("oferte înregistrate", "offers recorded")}
@@ -668,125 +703,93 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                     {money(listing.min_increment_minor || 0, language)}
                   </p>
                 )}
-                {canWrite && !isOwner && auctionLive ? (
-                  <form
-                    className="stack-form"
-                    onSubmit={(event) => event.preventDefault()}
-                  >
-                    <label htmlFor="listing-bid-amount">
-                      {bidTerms.yourOfferEur}
-                      <div className="currency-input">
-                        <input
-                          id="listing-bid-amount"
-                          name="amount"
-                          data-testid="listing-bid-amount"
-                          type="number"
-                          step="0.01"
-                          min={
-                            listing.auction_mode === "ascending"
-                              ? minimum / 100
-                              : 0.01
-                          }
-                          required
-                          disabled={confirmAmountMinor !== null || mutation.busy}
-                          placeholder={
-                            listing.auction_mode === "ascending"
-                              ? String(minimum / 100)
-                              : "0"
-                          }
-                          onChange={() => {
-                            if (confirmAmountMinor !== null) {
-                              setConfirmAmountMinor(null);
-                            }
-                          }}
-                        />
-                        <span>EUR</span>
-                      </div>
-                    </label>
-                    {listing.auction_mode === "sealed" ? (
-                      <button
-                        type="button"
-                        className="button primary"
-                        disabled={
-                          confirmAmountMinor !== null || mutation.busy
-                        }
-                        data-testid="listing-place-bid"
-                        onClick={(event) => {
-                          const form = event.currentTarget.form;
-                          if (!form) return;
-                          const raw = Number(
-                            new FormData(form).get("amount"),
-                          );
-                          const minor = Math.round(raw * 100);
-                          if (!Number.isFinite(minor) || minor <= 0) return;
-                          setConfirmAmountMinor(minor);
-                        }}
-                      >
-                        {mutation.busy
-                          ? t("Se înregistrează…", "Submitting…")
-                          : t(
-                              "Trimite oferta confidențială",
-                              "Send confidential offer",
-                            )}
-                        <ArrowUpRight size={16} />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="button primary"
-                        disabled={
-                          confirmAmountMinor !== null || mutation.busy
-                        }
-                        data-testid="listing-place-bid"
-                        onClick={(event) => {
-                          const form = event.currentTarget.form;
-                          if (!form) return;
-                          const raw = Number(
-                            new FormData(form).get("amount"),
-                          );
-                          const minor = Math.round(raw * 100);
-                          if (!Number.isFinite(minor) || minor < minimum)
-                            return;
-                          setConfirmAmountMinor(minor);
-                        }}
-                      >
-                        {mutation.busy
-                          ? t("Se înregistrează…", "Submitting…")
-                          : bidTerms.placeBid}
-                        <ArrowUpRight size={16} />
-                      </button>
+                {ended && listing.auction_mode === "ascending" ? (
+                  <p className="muted" data-testid="listing-ended-copy">
+                    {formatMapEndedCardLine(
+                      listing.current_bid_minor ?? listing.starting_price_minor ?? listing.price_minor,
+                      language,
                     )}
-                    {confirmAmountMinor !== null ? (
-                      <BidConfirmPanel
-                        language={language}
-                        amountMinor={confirmAmountMinor}
-                        minIncrementMinor={listing.min_increment_minor || 0}
-                        busy={mutation.busy}
-                        testId="listing-bid-confirm-panel"
-                        onCancel={() => setConfirmAmountMinor(null)}
-                        onConfirm={() => void submitBid()}
-                      />
-                    ) : null}
-                    <Feedback
-                      error={mutation.error}
-                      message={mutation.message}
-                    />
-                  </form>
-                ) : isOwner ? (
+                  </p>
+                ) : null}
+                {scheduled && canWrite && !isOwner ? (
+                  <p className="muted" data-testid="listing-scheduled-copy">
+                    {listing.starts_at
+                      ? t(
+                          `Începe pe ${dateTime(listing.starts_at, "ro")}`,
+                          `Starts ${dateTime(listing.starts_at, "en")}`,
+                        )
+                      : t("Licitație programată", "Scheduled auction")}
+                  </p>
+                ) : null}
+                {canWrite && !isOwner && auctionLive ? (
+                  <LiveAuctionBidControl
+                    language={language}
+                    variant="detail"
+                    inputId="listing-bid-amount"
+                    testIdPrefix="listing"
+                    amountLabel={bidTerms.yourOfferEur}
+                    amountMinor={effectiveBidMinor}
+                    onAmountMinorChange={setBidAmountMinor}
+                    confirmAmountMinor={confirmAmountMinor}
+                    onOpenConfirm={() => {
+                      if (
+                        listing.auction_mode === "ascending" &&
+                        effectiveBidMinor < minimum
+                      ) {
+                        return;
+                      }
+                      if (
+                        listing.auction_mode === "sealed" &&
+                        effectiveBidMinor <= 0
+                      ) {
+                        return;
+                      }
+                      setConfirmAmountMinor(effectiveBidMinor);
+                    }}
+                    onCancelConfirm={() => setConfirmAmountMinor(null)}
+                    onConfirmSubmit={() => void submitBid()}
+                    minimumBidMinor={
+                      listing.auction_mode === "ascending" ? minimum : 1
+                    }
+                    minIncrementMinor={listing.min_increment_minor || 0}
+                    busy={mutation.busy}
+                    currentBidMinor={
+                      listing.current_bid_minor ?? listing.price_minor
+                    }
+                    outbid={viewerBidFlags.outbid}
+                    leadingBid={viewerBidFlags.leadingBid}
+                    stepMajor={
+                      listing.auction_mode === "sealed" ? 0.01 : undefined
+                    }
+                  />
+                ) : null}
+                {canWrite && !isOwner && auctionLive ? (
+                  <Feedback
+                    error={mutation.error}
+                    message={mutation.message}
+                  />
+                ) : null}
+                {isOwner ? (
                   <Link className="button primary" href="/workspace?tab=owner">
                     {t("Gestionează licitația", "Manage auction")}
                     <ArrowUpRight size={16} />
                   </Link>
-                ) : auctionLive ? (
+                ) : auctionLive && !canWrite ? (
                   <Link
                     className="button primary"
-                    href={buildAccountSignInUrl(listingPath)}
+                    data-testid="listing-guest-bid-login"
+                    href={buildLoginBidIntentUrl(listingPath)}
                   >
                     {bidTerms.signInToBid}
                     <ArrowUpRight size={16} />
                   </Link>
                 ) : null}
-                <p className="offer-fineprint">{legalOfferFineprint(language)}</p>
+                <p className="offer-fineprint">
+                  {t(
+                    "Proprietarul selectează oferta după închidere. Invitația și validarea contului sunt necesare unde se aplică. Ora și eligibilitatea sunt verificate de server.",
+                    "The owner selects an offer after closing. An invitation and verified account are required where applicable. The server verifies timing and eligibility.",
+                  )}
+                </p>
               </>
             ) : (
               <>
@@ -814,7 +817,10 @@ export function ListingDetail({ listing }: { listing: Listing }) {
             <div className="simulation-note">
               <ShieldCheck size={18} />
               <span>
-                {legalSimulationScopeNote(language)}
+                {t(
+                  "Ofertele, licitațiile și rezervările sunt simulate (POC). Fără plăți, garanții, portofel sau transfer de bani reali.",
+                  "Bids, auctions and reservations are simulated (POC). No payments, bid bonds, wallet, or real money transfers.",
+                )}
               </span>
             </div>
           </div>

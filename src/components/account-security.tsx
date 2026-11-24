@@ -7,6 +7,7 @@ import {
   verifiedTotpFactors,
   type MfaTotpFactorRow,
 } from "@/lib/mfa-factor-display";
+import { mfaUnenrollApiErrorMessage } from "@/lib/mfa-unenroll-messages";
 import { MfaUnenrollPicker } from "@/components/mfa-unenroll-picker";
 import { Feedback, usePlatform } from "./platform";
 
@@ -52,11 +53,14 @@ export function AccountSecurity() {
       const body = await response.json();
       if (!response.ok || body.error)
         throw new Error(
-          body.error ||
+          mfaUnenrollApiErrorMessage(
+            body,
+            t,
             t(
               "Nu am putut actualiza autentificatorul.",
               "Could not update the authenticator.",
             ),
+          ),
         );
       if (action === "enroll") {
         setFactor(body.data.id);

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { switchPocDemoPersona } from "./helpers/poc-demo-switcher";
 
 const TILE_URL_PATTERN =
   /^https:\/\/tile\.openstreetmap\.org\/\d+\/\d+\/\d+\.png$/;
@@ -112,13 +113,7 @@ test.describe("catalogue map consent (logged in POC)", () => {
     );
     test.setTimeout(60_000);
     await page.goto("/");
-    const switchResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes("/api/poc/switch-account") &&
-        response.request().method() === "POST",
-    );
-    await page.getByRole("button", { name: "Proprietar", exact: true }).click();
-    expect((await switchResponse).ok()).toBe(true);
+    await switchPocDemoPersona(page, "owner", { waitForSwitchApi: true });
     await assertMapConsentFlow(page, testInfo);
   });
 });

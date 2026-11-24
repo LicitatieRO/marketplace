@@ -27,9 +27,10 @@ export function BidConfirmPanel({
   confirmButtonRef,
 }: BidConfirmPanelProps) {
   const glossary = bidGlossary(language);
+  const confirmTestId = testId.replace(/-panel$/, "") || "bid-confirm";
   return (
     <div className="lr-map-confirm panel-inset" data-testid={testId}>
-      <p>
+      <p data-testid={`${testId}-prompt`}>
         {bidConfirmPrompt(
           language,
           money(amountMinor, language),
@@ -41,7 +42,7 @@ export function BidConfirmPanel({
           ref={confirmButtonRef}
           type="button"
           className="button primary"
-          data-testid={testId.replace(/-panel$/, "") || "bid-confirm"}
+          data-testid={confirmTestId}
           disabled={busy}
           onClick={onConfirm}
         >
@@ -50,7 +51,7 @@ export function BidConfirmPanel({
         <button
           type="button"
           className="button"
-          data-testid={`${(testId.replace(/-panel$/, "") || "bid-confirm")}-cancel`}
+          data-testid={`${confirmTestId}-cancel`}
           onClick={onCancel}
         >
           {glossary.cancel}

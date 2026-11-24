@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Settings2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   parseCatalogueMapFilters,
@@ -22,20 +23,13 @@ import {
   type MapBbox as QueryMapBbox,
 } from "@/lib/map-bounds-query";
 import type { MapListing } from "@/lib/map-listing-types";
-import { placeBidAmountMinor } from "@/lib/bid-confirm-amount";
-import {
-  bidGlossary,
-  legalMapPageTitle,
-  legalMapScheduledAuctionFallback,
-} from "@/lib/bid-copy";
-import { BidConfirmPanel } from "@/components/bid-confirm-panel";
 import { formatEurCompact } from "@/lib/format-eur-compact";
 import { dateTime, money } from "@/lib/format";
 import { ROMANIA_BBOX } from "@/lib/geo-bounds";
 import {
   listingsMapSearchParams,
   parseListingsMapListingId,
-  parseListingsMapView,
+  type ListingsMapView,
 } from "@/lib/listings-map-url";
 import {
   effectiveServerNowMs,
@@ -48,6 +42,16 @@ import {
 } from "@/lib/optional-content";
 import { notifyOptionalContentChanged } from "@/lib/optional-content-events";
 import { useAllowsOptionalContent } from "@/components/disclosures/cookie-consent-banner";
+import { LiveAuctionBidControl } from "@/components/live-auction-bid-control";
+import { placeBidAmountMinor } from "@/lib/bid-confirm-amount";
+import { buildLoginBidIntentUrl } from "@/lib/auth-return";
+import { bidGlossary } from "@/lib/bid-copy";
+import {
+  mapFilterChipRent,
+  mapSearchOnMoveLabel,
+  mapToolbarSettingsChip,
+} from "@/lib/i18n";
+import { buildMapFilterChips } from "@/lib/map-filter-chips";
 import { Feedback, useMutation, usePlatform } from "@/components/platform";
 import { ListingsMapCanvas } from "./listings-map-canvas";
 
@@ -72,20 +76,23 @@ function focusableCardNodes(container: HTMLElement): HTMLElement[] {
   ).filter((node) => !node.hasAttribute("disabled") && node.tabIndex !== -1);
 }
 
-export function ListingsMapPage() {
+export function ListingsMapPage({
+  initialMobileView = "list",
+}: {
+  initialMobileView?: ListingsMapView;
+}) {
   const { t, language, viewer, configured } = usePlatform();
   const bidTerms = bidGlossary(language);
   const globalAllows = useAllowsOptionalContent();
   const [localAccepted, setLocalAccepted] = useState(false);
   const allowsTiles = globalAllows || localAccepted;
-  const [mobileView, setMobileView] = useState<"list" | "map">(() => {
-    if (typeof window === "undefined") return "list";
-    return parseListingsMapView(new URLSearchParams(window.location.search));
-  });
+  const [mobileView, setMobileView] =
+    useState<ListingsMapView>(initialMobileView);
   const [listings, setListings] = useState<MapListing[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [searchOnMove, setSearchOnMove] = useState(true);
+  const [mapSettingsOpen, setMapSettingsOpen] = useState(false);
   const [bbox, setBbox] = useState<MapBbox>(DEFAULT_BBOX);
   const [confirmAmount, setConfirmAmount] = useState<number | null>(null);
   const [bidMinor, setBidMinor] = useState<number | null>(null);
@@ -128,6 +135,21 @@ export function ListingsMapPage() {
         filterMeta,
       ),
     [listings, catalogueFilters, filterMeta],
+  );
+
+  const filterChips = useMemo(
+    () =>
+      buildMapFilterChips(catalogueFilters, {
+        rent: t(mapFilterChipRent.ro, mapFilterChipRent.en),
+        rooms: (n) =>
+          t(`${n} camere`, `${n} rooms`),
+        maxPrice: (n) =>
+          t(`Până la €${n}`, `Up to €${n}`),
+        neighborhood: (n) => n,
+        query: (q) => `“${q}”`,
+        propertyType: (type) => type,
+      }),
+    [catalogueFilters, t],
   );
 
   const selected = visibleListings.find((l) => l.id === selectedId) ?? null;
@@ -231,7 +253,6 @@ export function ListingsMapPage() {
     const params = new URLSearchParams(window.location.search);
     const listing = parseListingsMapListingId(params.get("listing"));
     if (listing) setSelectedId(listing);
-    setMobileView(parseListingsMapView(params));
     setClientNowMs(Date.now());
     setRawUrlFilters(parseCatalogueMapFilters(params));
     void fetchListings(DEFAULT_BBOX);
@@ -424,7 +445,7 @@ export function ListingsMapPage() {
           ({t("zonă aproximativă", "approximate area")})
         </span>
       </p>
-      <div className="lr-map-card-bid">
+      <div className="lr-map-card-bid" data-tour="map-card-bid">
         <strong>{money(selected.currentBidCents, language)}</strong>
         <span className="chip poc">POC / Simulare</span>
       </div>
@@ -450,7 +471,7 @@ export function ListingsMapPage() {
           <Link
             className="button primary"
             data-testid="map-guest-bid-login"
-            href={`/login?next=${encodeURIComponent(`/map?listing=${selected.id}&intent=bid`)}`}
+            href={buildLoginBidIntentUrl(`/map?listing=${selected.id}`)}
           >
             {bidTerms.signInToBid}
           </Link>
@@ -470,74 +491,36 @@ export function ListingsMapPage() {
                 `Începe pe ${dateTime(selected.startsAt, "ro")}`,
                 `Starts ${dateTime(selected.startsAt, "en")}`,
               )
-            : legalMapScheduledAuctionFallback(language)}
+            : t("Licitație programată", "Scheduled auction")}
         </p>
       ) : selected.status === "live" && configured ? (
-        <div className="lr-map-bid-control">
-          {selected.outbid ? (
-            <p className="feedback warn" aria-live="polite">
-              {t(
-                `Ai fost depășit. Oferta curentă: ${money(selected.currentBidCents, language)}`,
-                `You've been outbid. Current bid: ${money(selected.currentBidCents, language)}`,
-              )}
-            </p>
-          ) : null}
-          {selected.leadingBid ? (
-            <p className="feedback success" aria-live="polite">
-              {t("Ești pe primul loc", "You're the highest bidder")}
-            </p>
-          ) : null}
-          <label className="small" htmlFor="map-bid-amount">
-            {bidTerms.bidAmountLabel}
-          </label>
-          <input
-            id="map-bid-amount"
-            data-testid="map-bid-amount"
-            type="number"
-            min={minimumBid / 100}
-            step={selected.minIncrementCents / 100}
-            value={bidMinor !== null ? bidMinor / 100 : ""}
-            disabled={confirmAmount !== null || mutation.busy}
-            onChange={(e) => {
-              if (confirmAmount !== null) setConfirmAmount(null);
-              setBidMinor(Math.round(Number(e.target.value) * 100));
-            }}
-          />
-          <button
-            type="button"
-            className="button primary"
-            data-testid="map-place-bid"
-            disabled={
-              confirmAmount !== null ||
-              mutation.busy ||
-              bidMinor === null ||
-              bidMinor < minimumBid
-            }
-            onClick={() => {
-              if (bidMinor === null) return;
-              setConfirmAmount(bidMinor);
-            }}
-          >
-            {bidTerms.placeBid}
-          </button>
-        </div>
+        <LiveAuctionBidControl
+          language={language}
+          variant="map"
+          inputId="map-bid-amount"
+          testIdPrefix="map"
+          amountMinor={bidMinor}
+          onAmountMinorChange={setBidMinor}
+          confirmAmountMinor={confirmAmount}
+          onOpenConfirm={() => {
+            if (bidMinor === null) return;
+            setConfirmAmount(bidMinor);
+          }}
+          onCancelConfirm={() => setConfirmAmount(null)}
+          onConfirmSubmit={() => void submitBid()}
+          minimumBidMinor={minimumBid}
+          minIncrementMinor={selected.minIncrementCents}
+          busy={mutation.busy}
+          currentBidMinor={selected.currentBidCents}
+          outbid={selected.outbid}
+          leadingBid={selected.leadingBid}
+          confirmButtonRef={confirmPrimaryRef}
+        />
       ) : null}
       {selected.status === "scheduled" && viewer ? (
         <Link href={listingPath(selected.slug)} className="button">
           {t("Urmărește", "Watch")}
         </Link>
-      ) : null}
-      {confirmAmount !== null ? (
-        <BidConfirmPanel
-          language={language}
-          amountMinor={confirmAmount}
-          minIncrementMinor={selected.minIncrementCents}
-          busy={mutation.busy}
-          testId="map-bid-confirm-panel"
-          confirmButtonRef={confirmPrimaryRef}
-          onCancel={() => setConfirmAmount(null)}
-          onConfirm={() => void submitBid()}
-        />
       ) : null}
       <Link href={listingPath(selected.slug)} className="button">
         {t("Vezi proprietatea →", "View property →")}
@@ -574,23 +557,54 @@ export function ListingsMapPage() {
         {t("Sari la listă", "Skip to list")}
       </a>
       <header className="listings-map-toolbar">
-        <h1>{legalMapPageTitle(language)}</h1>
-        <label className="small">
-          <input
-            type="checkbox"
-            checked={searchOnMove}
-            onChange={(e) => setSearchOnMove(e.target.checked)}
-          />{" "}
-          {t("Caută când muți harta", "Search as I move the map")}
-        </label>
-        {!searchOnMove ? (
+        <div className="listings-map-toolbar-head">
+          <h1>{t("Hartă licitații", "Auction map")}</h1>
           <button
             type="button"
-            className="button"
-            onClick={() => void fetchListings(bbox)}
+            className="button listings-map-settings-chip"
+            data-testid="listings-map-settings-chip"
+            aria-expanded={mapSettingsOpen}
+            onClick={() => setMapSettingsOpen((open) => !open)}
           >
-            {t("Caută în această zonă", "Search this area")}
+            <Settings2 size={14} aria-hidden />
+            {t(mapToolbarSettingsChip.ro, mapToolbarSettingsChip.en)}
           </button>
+        </div>
+        {filterChips.length > 0 ? (
+          <div
+            className="listings-map-filter-chips"
+            aria-label={t("Filtre active", "Active filters")}
+          >
+            {filterChips.map((chip) => (
+              <span key={chip.id} className="chip listings-map-filter-chip">
+                {chip.label}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        {mapSettingsOpen ? (
+          <div
+            className="listings-map-settings-panel"
+            data-testid="listings-map-settings-panel"
+          >
+            <label className="small listings-map-search-on-move">
+              <input
+                type="checkbox"
+                checked={searchOnMove}
+                onChange={(e) => setSearchOnMove(e.target.checked)}
+              />{" "}
+              {t(mapSearchOnMoveLabel.ro, mapSearchOnMoveLabel.en)}
+            </label>
+            {!searchOnMove ? (
+              <button
+                type="button"
+                className="button"
+                onClick={() => void fetchListings(bbox)}
+              >
+                {t("Caută în această zonă", "Search this area")}
+              </button>
+            ) : null}
+          </div>
         ) : null}
         {loading ? <span aria-live="polite">{t("Se încarcă…", "Loading…")}</span> : null}
         {fetchError ? (
@@ -666,7 +680,7 @@ export function ListingsMapPage() {
             })
           )}
         </aside>
-        <section className="listings-map-map">
+        <section className="listings-map-map" data-tour="map-surface">
           <button
             type="button"
             className="listings-map-mobile-toggle"

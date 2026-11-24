@@ -1,7 +1,25 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { MFA_UNENROLL_STAFF_LAST_FACTOR_CODE } from '@/lib/mfa-unenroll-messages';
 import { RequestError } from '@/lib/security';
 import { serviceRoleClient } from '@/lib/server/service-role';
+
+export const MFA_UNENROLL_CLAIMS_ERROR = 'MFA_UNENROLL_CLAIMS_ERROR';
+
+type MfaClaimsResult = {
+  data: { claims?: { aal?: unknown } } | null;
+  error: unknown;
+};
+
+export function aalForMfaUnenroll(claimsResult: MfaClaimsResult): string {
+  if (claimsResult.error) {
+    console.error('mfa.unenroll_claims_failed', {
+      reason: MFA_UNENROLL_CLAIMS_ERROR,
+    });
+    return 'aal1';
+  }
+  return String(claimsResult.data?.claims?.aal ?? 'aal1');
+}
 
 export const MFA_UNENROLL_GENERIC = 'Unable to remove authenticator.';
 export const MFA_UNENROLL_AAL =
@@ -48,7 +66,11 @@ export async function unenrollMfaFactor(
     verifiedFactors.length === 1 &&
     verifiedFactors[0]?.id === factorId
   ) {
-    throw new RequestError(MFA_UNENROLL_BLOCKED, 403);
+    throw new RequestError(
+      MFA_UNENROLL_BLOCKED,
+      403,
+      MFA_UNENROLL_STAFF_LAST_FACTOR_CODE,
+    );
   }
 
   const { error: unenrollError } = await db.auth.mfa.unenroll({ factorId });

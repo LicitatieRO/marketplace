@@ -133,22 +133,20 @@ test.describe("auth/legal POC (configured backend)", () => {
     await expect(page.getByRole("heading", { name: "Următorul pas" })).toBeVisible({
       timeout: 10_000,
     });
-    await expect(
-      page.getByRole("button", { name: "Înregistrează oferta" }),
-    ).toHaveCount(0);
+    await expect(page.getByTestId("listing-place-bid")).toHaveCount(0);
     const listingPath = `/listings/${listingId}`;
-    const participate = page
-      .locator(".offer-panel")
-      .getByRole("link", { name: "Intră în cont pentru a participa" });
+    const participate = page.getByTestId("listing-guest-bid-login");
     await expect(participate).toBeVisible();
     await expect(participate).toHaveAttribute(
       "href",
-      new RegExp(`/account\\?mode=login&next=${encodeURIComponent(listingPath).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
+      new RegExp(
+        `/login\\?next=${encodeURIComponent(listingPath).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}&intent=bid`,
+      ),
     );
     await participate.click();
     await expect(page).toHaveURL(
       new RegExp(
-        `/account\\?mode=login&next=${encodeURIComponent(listingPath).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
+        `/login\\?next=${encodeURIComponent(listingPath).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}&intent=bid`,
       ),
     );
     if (

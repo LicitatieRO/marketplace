@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildAccountSignInUrl, safeReturnPath } from "@/lib/security";
 import {
   authBidIntentNotice,
+  buildLoginBidIntentUrl,
   classifyPostAuthDestination,
   postAuthCtaLabel,
   resolveAuthIntent,
@@ -17,6 +18,30 @@ describe("auth return paths (#121)", () => {
     const next = encodeURIComponent(mapCardPath);
     expect(`/login?next=${next}`).toContain(encodeURIComponent("intent=bid"));
     expect(safeReturnPath(mapCardPath)).toBe(mapCardPath);
+  });
+
+  it("builds listing login URL with bid intent", () => {
+    const url = buildLoginBidIntentUrl(listingPath);
+    expect(url).toBe(
+      `/login?next=${encodeURIComponent(listingPath)}&intent=bid`,
+    );
+    expect(resolveAuthIntent(listingPath, "bid")).toBe("bid");
+  });
+
+  it("buildLoginBidIntentUrl sanitizes open-redirect variants", () => {
+    const safeNext = encodeURIComponent("/workspace");
+    expect(buildLoginBidIntentUrl("//evil.example")).toBe(
+      `/login?next=${safeNext}&intent=bid`,
+    );
+    expect(buildLoginBidIntentUrl("/\\evil")).toBe(
+      `/login?next=${safeNext}&intent=bid`,
+    );
+    expect(buildLoginBidIntentUrl("/%2f%2fevil.example")).toBe(
+      `/login?next=${safeNext}&intent=bid`,
+    );
+    expect(buildLoginBidIntentUrl("%2f%2fevil.example")).toBe(
+      `/login?next=${safeNext}&intent=bid`,
+    );
   });
 
   it("rejects open-redirect variants in safeReturnPath", () => {

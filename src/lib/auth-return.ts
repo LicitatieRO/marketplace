@@ -1,5 +1,13 @@
+import { safeReturnPath } from "@/lib/security";
+
 const LISTING_PATH =
   /^\/listings\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Guest bid CTA → `/login` (forwards `next` + `intent` to account). Never auto-submits. */
+export function buildLoginBidIntentUrl(returnTo: string): string {
+  const safe = safeReturnPath(returnTo);
+  return `/login?next=${encodeURIComponent(safe)}&intent=bid`;
+}
 
 export type PostAuthDestination =
   | "workspace"

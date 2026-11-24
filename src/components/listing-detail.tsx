@@ -37,10 +37,15 @@ import {
   useAllowsOptionalContent,
 } from "@/components/disclosures/cookie-consent-banner";
 import { openCookiePreferences } from "@/lib/optional-content-events";
+import { LiveAuctionBidControl } from "@/components/live-auction-bid-control";
+import { placeBidAmountMinor } from "@/lib/bid-confirm-amount";
+import { bidGlossary } from "@/lib/bid-copy";
+import { formatMapEndedCardLine } from "@/lib/map-listing-time";
+import { buildLoginBidIntentUrl } from "@/lib/auth-return";
+import { useListingBidViewerFlags } from "@/lib/listing-bid-viewer-state";
 import { Feedback, useMutation, usePlatform } from "./platform";
 import { AuctionCountdown, useAuctionCountdown } from "./auction-countdown";
 import { ListingDetailMap } from "./map/listing-detail-map";
-import { buildAccountSignInUrl } from "@/lib/security";
 export function ListingDetail({ listing }: { listing: Listing }) {
   const { language, t, configured, viewer, favorites, setFavoriteSaved } =
     usePlatform();
@@ -131,6 +136,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
     viewer?.id && listing.owner_id && viewer.id === listing.owner_id,
   );
   const canWrite = configured && !!viewer;
+  const bidTerms = bidGlossary(language);
   const minimum =
     listing.current_bid_minor !== null
       ? listing.current_bid_minor + (listing.min_increment_minor || 0)
@@ -141,20 +147,42 @@ export function ListingDetail({ listing }: { listing: Listing }) {
     language,
     listing.transaction_type,
   );
-  const submitBid = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
+  const [bidAmountMinor, setBidAmountMinor] = useState<number | null>(null);
+  const [confirmAmountMinor, setConfirmAmountMinor] = useState<number | null>(
+    null,
+  );
+  const effectiveBidMinor = bidAmountMinor ?? minimum;
+  const viewerBidFlags = useListingBidViewerFlags(
+    listing.id,
+    Boolean(viewer && !isOwner && listing.auction_id && auctionLive),
+  );
+  useEffect(() => {
+    queueMicrotask(() => {
+      setBidAmountMinor(null);
+      setConfirmAmountMinor(null);
+    });
+  }, [minimum, listing.current_bid_minor, listing.id]);
+  const submitBid = async () => {
+    if (!listing.auction_id) return;
+    const amountMinor = placeBidAmountMinor(
+      confirmAmountMinor,
+      effectiveBidMinor,
+    );
+    if (amountMinor === null) return;
     if (
       await mutation.mutate(
         "place_bid",
         {
           p_auction_id: listing.auction_id,
-          p_amount_minor: Math.round(Number(form.get("amount")) * 100),
+          p_amount_minor: amountMinor,
         },
-        t("Oferta ta a fost înregistrată.", "Your offer has been recorded."),
+        bidTerms.bidRecordedSimulation,
       )
-    )
+    ) {
+      setConfirmAmountMinor(null);
+      viewerBidFlags.refresh();
       router.refresh();
+    }
   };
   const submitContact = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -645,6 +673,9 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                         ? money(listing.current_bid_minor, language)
                         : t("Încă nu există oferte", "No offers yet")}
                     </strong>
+                    <span className="chip poc" data-testid="listing-bid-poc-chip">
+                      {bidTerms.pocSimulare}
+                    </span>
                     <small>
                       {listing.bid_count}{" "}
                       {t("oferte înregistrate", "offers recorded")}
@@ -672,60 +703,84 @@ export function ListingDetail({ listing }: { listing: Listing }) {
                     {money(listing.min_increment_minor || 0, language)}
                   </p>
                 )}
+                {ended && listing.auction_mode === "ascending" ? (
+                  <p className="muted" data-testid="listing-ended-copy">
+                    {formatMapEndedCardLine(
+                      listing.current_bid_minor ?? listing.starting_price_minor ?? listing.price_minor,
+                      language,
+                    )}
+                  </p>
+                ) : null}
+                {scheduled && canWrite && !isOwner ? (
+                  <p className="muted" data-testid="listing-scheduled-copy">
+                    {listing.starts_at
+                      ? t(
+                          `Începe pe ${dateTime(listing.starts_at, "ro")}`,
+                          `Starts ${dateTime(listing.starts_at, "en")}`,
+                        )
+                      : t("Licitație programată", "Scheduled auction")}
+                  </p>
+                ) : null}
                 {canWrite && !isOwner && auctionLive ? (
-                  <form onSubmit={submitBid} className="stack-form">
-                    <label>
-                      {t("Oferta ta în EUR", "Your offer in EUR")}
-                      <div className="currency-input">
-                        <input
-                          name="amount"
-                          type="number"
-                          step="0.01"
-                          min={
-                            listing.auction_mode === "ascending"
-                              ? minimum / 100
-                              : 0.01
-                          }
-                          required
-                          placeholder={
-                            listing.auction_mode === "ascending"
-                              ? String(minimum / 100)
-                              : "0"
-                          }
-                        />
-                        <span>EUR</span>
-                      </div>
-                    </label>
-                    <button className="button primary" disabled={mutation.busy}>
-                      {mutation.busy
-                        ? t("Se înregistrează…", "Submitting…")
-                        : listing.auction_mode === "sealed"
-                          ? t(
-                              "Trimite oferta confidențială",
-                              "Send confidential offer",
-                            )
-                          : t("Înregistrează oferta", "Place an offer")}
-                      <ArrowUpRight size={16} />
-                    </button>
-                    <Feedback
-                      error={mutation.error}
-                      message={mutation.message}
-                    />
-                  </form>
-                ) : isOwner ? (
+                  <LiveAuctionBidControl
+                    language={language}
+                    variant="detail"
+                    inputId="listing-bid-amount"
+                    testIdPrefix="listing"
+                    amountLabel={bidTerms.yourOfferEur}
+                    amountMinor={effectiveBidMinor}
+                    onAmountMinorChange={setBidAmountMinor}
+                    confirmAmountMinor={confirmAmountMinor}
+                    onOpenConfirm={() => {
+                      if (
+                        listing.auction_mode === "ascending" &&
+                        effectiveBidMinor < minimum
+                      ) {
+                        return;
+                      }
+                      if (
+                        listing.auction_mode === "sealed" &&
+                        effectiveBidMinor <= 0
+                      ) {
+                        return;
+                      }
+                      setConfirmAmountMinor(effectiveBidMinor);
+                    }}
+                    onCancelConfirm={() => setConfirmAmountMinor(null)}
+                    onConfirmSubmit={() => void submitBid()}
+                    minimumBidMinor={
+                      listing.auction_mode === "ascending" ? minimum : 1
+                    }
+                    minIncrementMinor={listing.min_increment_minor || 0}
+                    busy={mutation.busy}
+                    currentBidMinor={
+                      listing.current_bid_minor ?? listing.price_minor
+                    }
+                    outbid={viewerBidFlags.outbid}
+                    leadingBid={viewerBidFlags.leadingBid}
+                    stepMajor={
+                      listing.auction_mode === "sealed" ? 0.01 : undefined
+                    }
+                  />
+                ) : null}
+                {canWrite && !isOwner && auctionLive ? (
+                  <Feedback
+                    error={mutation.error}
+                    message={mutation.message}
+                  />
+                ) : null}
+                {isOwner ? (
                   <Link className="button primary" href="/workspace?tab=owner">
                     {t("Gestionează licitația", "Manage auction")}
                     <ArrowUpRight size={16} />
                   </Link>
-                ) : auctionLive ? (
+                ) : auctionLive && !canWrite ? (
                   <Link
                     className="button primary"
-                    href={buildAccountSignInUrl(listingPath)}
+                    data-testid="listing-guest-bid-login"
+                    href={buildLoginBidIntentUrl(listingPath)}
                   >
-                    {t(
-                      "Intră în cont pentru a participa",
-                      "Sign in to participate",
-                    )}
+                    {bidTerms.signInToBid}
                     <ArrowUpRight size={16} />
                   </Link>
                 ) : null}
@@ -763,8 +818,8 @@ export function ListingDetail({ listing }: { listing: Listing }) {
               <ShieldCheck size={18} />
               <span>
                 {t(
-                  "Rezervări doar simulate. Fără plăți, portofel sau transfer de bani reali.",
-                  "Reservations are simulation only. No payments, wallet, or real money transfers.",
+                  "Ofertele, licitațiile și rezervările sunt simulate (POC). Fără plăți, garanții, portofel sau transfer de bani reali.",
+                  "Bids, auctions and reservations are simulated (POC). No payments, bid bonds, wallet, or real money transfers.",
                 )}
               </span>
             </div>

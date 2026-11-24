@@ -42,6 +42,10 @@ import {
 } from "@/lib/optional-content";
 import { notifyOptionalContentChanged } from "@/lib/optional-content-events";
 import { useAllowsOptionalContent } from "@/components/disclosures/cookie-consent-banner";
+import { LiveAuctionBidControl } from "@/components/live-auction-bid-control";
+import { placeBidAmountMinor } from "@/lib/bid-confirm-amount";
+import { buildLoginBidIntentUrl } from "@/lib/auth-return";
+import { bidGlossary } from "@/lib/bid-copy";
 import {
   mapFilterChipRent,
   mapSearchOnMoveLabel,
@@ -78,6 +82,7 @@ export function ListingsMapPage({
   initialMobileView?: ListingsMapView;
 }) {
   const { t, language, viewer, configured } = usePlatform();
+  const bidTerms = bidGlossary(language);
   const globalAllows = useAllowsOptionalContent();
   const [localAccepted, setLocalAccepted] = useState(false);
   const allowsTiles = globalAllows || localAccepted;
@@ -386,15 +391,17 @@ export function ListingsMapPage({
   }, []);
 
   const submitBid = async () => {
-    if (!selected || bidMinor === null || confirmAmount === null) return;
+    if (!selected || confirmAmount === null) return;
     if (!selected.auctionId) return;
+    const amountMinor = placeBidAmountMinor(confirmAmount, bidMinor);
+    if (amountMinor === null) return;
     const ok = await mutation.mutate(
       "place_bid",
       {
         p_auction_id: selected.auctionId,
-        p_amount_minor: bidMinor,
+        p_amount_minor: amountMinor,
       },
-      t("Oferta a fost înregistrată (simulare).", "Bid recorded (simulation)."),
+      bidTerms.bidRecordedSimulation,
     );
     setConfirmAmount(null);
     if (ok) void fetchListings(bbox);
@@ -464,9 +471,9 @@ export function ListingsMapPage({
           <Link
             className="button primary"
             data-testid="map-guest-bid-login"
-            href={`/login?next=${encodeURIComponent(`/map?listing=${selected.id}&intent=bid`)}`}
+            href={buildLoginBidIntentUrl(`/map?listing=${selected.id}`)}
           >
-            {t("Autentifică-te pentru a licita", "Sign in to bid")}
+            {bidTerms.signInToBid}
           </Link>
         ) : null
       ) : selected.isOwn ? (
@@ -487,78 +494,33 @@ export function ListingsMapPage({
             : t("Licitație programată", "Scheduled auction")}
         </p>
       ) : selected.status === "live" && configured ? (
-        <div className="lr-map-bid-control">
-          {selected.outbid ? (
-            <p className="feedback warn" aria-live="polite">
-              {t(
-                `Ai fost depășit. Oferta curentă: ${money(selected.currentBidCents, language)}`,
-                `You've been outbid. Current bid: ${money(selected.currentBidCents, language)}`,
-              )}
-            </p>
-          ) : null}
-          {selected.leadingBid ? (
-            <p className="feedback success" aria-live="polite">
-              {t("Ești pe primul loc", "You're the highest bidder")}
-            </p>
-          ) : null}
-          <label className="small" htmlFor="map-bid-amount">
-            {t("Sumă ofertă (EUR)", "Bid amount (EUR)")}
-          </label>
-          <input
-            id="map-bid-amount"
-            data-testid="map-bid-amount"
-            type="number"
-            min={minimumBid / 100}
-            step={selected.minIncrementCents / 100}
-            value={bidMinor !== null ? bidMinor / 100 : ""}
-            onChange={(e) =>
-              setBidMinor(Math.round(Number(e.target.value) * 100))
-            }
-          />
-          <button
-            type="button"
-            className="button primary"
-            data-testid="map-place-bid"
-            disabled={bidMinor === null || bidMinor < minimumBid}
-            onClick={() => setConfirmAmount(bidMinor)}
-          >
-            {t("Licitează", "Place bid")}
-          </button>
-        </div>
+        <LiveAuctionBidControl
+          language={language}
+          variant="map"
+          inputId="map-bid-amount"
+          testIdPrefix="map"
+          amountMinor={bidMinor}
+          onAmountMinorChange={setBidMinor}
+          confirmAmountMinor={confirmAmount}
+          onOpenConfirm={() => {
+            if (bidMinor === null) return;
+            setConfirmAmount(bidMinor);
+          }}
+          onCancelConfirm={() => setConfirmAmount(null)}
+          onConfirmSubmit={() => void submitBid()}
+          minimumBidMinor={minimumBid}
+          minIncrementMinor={selected.minIncrementCents}
+          busy={mutation.busy}
+          currentBidMinor={selected.currentBidCents}
+          outbid={selected.outbid}
+          leadingBid={selected.leadingBid}
+          confirmButtonRef={confirmPrimaryRef}
+        />
       ) : null}
       {selected.status === "scheduled" && viewer ? (
         <Link href={listingPath(selected.slug)} className="button">
           {t("Urmărește", "Watch")}
         </Link>
-      ) : null}
-      {confirmAmount !== null ? (
-        <div className="lr-map-confirm panel-inset" data-testid="map-bid-confirm-panel">
-          <p>
-            {t(
-              `Confirmi oferta de ${money(confirmAmount, language)}? Aceasta este o simulare (POC). Nu se transferă bani și nu se creează nicio obligație legală.`,
-              `Confirm your ${money(confirmAmount, language)} bid? This is a simulation (POC). No money moves and no legal obligation is created.`,
-            )}
-          </p>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              ref={confirmPrimaryRef}
-              type="button"
-              className="button primary"
-              data-testid="map-bid-confirm"
-              disabled={mutation.busy}
-              onClick={() => void submitBid()}
-            >
-              {t("Confirm oferta", "Confirm bid")}
-            </button>
-            <button
-              type="button"
-              className="button"
-              onClick={() => setConfirmAmount(null)}
-            >
-              {t("Anulează", "Cancel")}
-            </button>
-          </div>
-        </div>
       ) : null}
       <Link href={listingPath(selected.slug)} className="button">
         {t("Vezi proprietatea →", "View property →")}

@@ -1,5 +1,6 @@
 import { MAP_BOUNDS_DEBOUNCE_MS } from "@/lib/map-bounds-query";
 import { expect, test, type Page } from "@playwright/test";
+import { switchPocDemoPersona } from "./helpers/poc-demo-switcher";
 
 /** Debounced quiet periods after pan/zoom (each step waits one bounds debounce). */
 const MAP_LISTINGS_STABILITY_DEBOUNCE_STEPS = 3;
@@ -477,14 +478,7 @@ test.describe("listings map (logged in POC)", () => {
     const listingId = "20000000-0000-4000-8000-000000000001";
 
     await page.goto("/");
-    const switchBuyer = page.waitForResponse(
-      (response) =>
-        response.url().includes("/api/poc/switch-account") &&
-        response.request().method() === "POST",
-      { timeout: 60_000 },
-    );
-    await page.getByRole("button", { name: "Cumpărător", exact: true }).click();
-    expect((await switchBuyer).ok()).toBe(true);
+    await switchPocDemoPersona(page, "buyer", { waitForSwitchApi: true });
 
     await page.goto(`/map?listing=${listingId}`);
     await page.getByTestId(`map-list-card-${listingId}`).click();
@@ -496,15 +490,8 @@ test.describe("listings map (logged in POC)", () => {
       timeout: 20_000,
     });
 
-    const switchOwner = page.waitForResponse(
-      (response) =>
-        response.url().includes("/api/poc/switch-account") &&
-        response.request().method() === "POST",
-      { timeout: 60_000 },
-    );
     await page.goto("/");
-    await page.getByRole("button", { name: "Proprietar", exact: true }).click();
-    expect((await switchOwner).ok()).toBe(true);
+    await switchPocDemoPersona(page, "owner", { waitForSwitchApi: true });
     await page.goto(`/map?listing=${listingId}`);
     await page.getByTestId(`map-list-card-${listingId}`).click();
     await expect(page.getByTestId("map-own-no-bid")).toBeVisible();

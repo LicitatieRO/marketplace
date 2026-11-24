@@ -175,3 +175,29 @@ export function localizedMessage(message: string, language: Language): string {
   };
   return messages[message] || message;
 }
+
+/** Marketing and pitch-polish copy (RO primary + EN). */
+export const pocBannerCollapsedLine = {
+  ro: "POC / Simulare · Fără bani reali",
+  en: "POC / Simulation · No real money",
+};
+export const pocBannerExpandLabel = { ro: "Detalii", en: "Details" };
+export const pocBannerCollapseLabel = { ro: "Restrânge", en: "Collapse" };
+export const heroSubline = {
+  ro: "Licitații simulate (POC) pentru locuințe din București: explorezi anunțuri demonstrative, fără cumpărare, închiriere sau plăți reale.",
+  en: "Simulated auctions (POC) for Bucharest homes: explore demonstration listings, with no real purchase, rental, or payment.",
+};
+export const heroMapCta = { ro: "Vezi harta", en: "See the map" };
+export const demoSwitcherChipLabel = { ro: "Demo", en: "Demo" };
+export const mapToolbarSettingsChip = { ro: "Setări hartă", en: "Map settings" };
+export const mapSearchOnMoveLabel = {
+  ro: "Caută când muți harta",
+  en: "Search as I move the map",
+};
+export const mapFilterChipBuy = { ro: "Cumpără", en: "Buy" };
+export const mapFilterChipRent = { ro: "Închiriază", en: "Rent" };
+export const openGraphImageTagline = {
+  ro: "Licitații de locuințe în București · POC",
+  en: "Bucharest home auctions · POC",
+};
+export const openGraphImageBrand = { ro: "LicitatieRO", en: "LicitatieRO" };

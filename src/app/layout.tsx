@@ -7,7 +7,25 @@ import { isStagingDemoBannerEnabled } from "@/lib/server/demo-banner";
 import { isPocSwitcherServerEnabled } from "@/lib/server/poc-switcher";
 import { siteRootRobotsMetadata } from "@/lib/site-indexing";
 import "./globals.css";
+
+function resolveMetadataBase(): URL {
+  const fromSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (fromSiteUrl) {
+    try {
+      return new URL(fromSiteUrl);
+    } catch {
+      /* fall through */
+    }
+  }
+  const vercel = process.env.VERCEL_URL?.trim();
+  if (vercel) {
+    return new URL(`https://${vercel}`);
+  }
+  return new URL("http://localhost:3000");
+}
+
 export const metadata: Metadata = {
+  metadataBase: resolveMetadataBase(),
   icons: { icon: "/icon.svg" },
   title: {
     default: "LicitatieRO — POC / Simulare · Locuințe în București",
@@ -15,6 +33,20 @@ export const metadata: Metadata = {
   },
   description:
     "Prototip de demonstrație. Ofertele, rezervările și plățile sunt simulate. Fără bani reali, fără escrow, fără transfer de proprietate prin platformă.",
+  openGraph: {
+    title: "LicitatieRO — POC / Simulare · Locuințe în București",
+    description:
+      "Prototip de demonstrație. Ofertele, rezervările și plățile sunt simulate. Fără bani reali, fără escrow, fără transfer de proprietate prin platformă.",
+    type: "website",
+    locale: "ro_RO",
+    siteName: "LicitatieRO",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LicitatieRO — POC / Simulare · Locuințe în București",
+    description:
+      "Prototip de demonstrație. Licitații transparente pentru locuințe din București (POC / Simulare).",
+  },
   ...siteRootRobotsMetadata(),
 };
 export default async function RootLayout({

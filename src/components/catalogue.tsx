@@ -40,9 +40,11 @@ const CatalogueMap = dynamic(
 export function Catalogue({
   listings,
   externalAuctions,
+  externalReportAnchorListingId,
 }: {
   listings: Listing[];
   externalAuctions?: ExternalAuctionListing[];
+  externalReportAnchorListingId?: string;
 }) {
   const { t, language, setCatalogueMapPath } = usePlatform();
   const { startTour } = useProductTour();
@@ -327,7 +329,10 @@ export function Catalogue({
           )}
         </div>
         {externalAuctions && externalAuctions.length > 0 ? (
-          <ExternalAuctionsSection listings={externalAuctions} />
+          <ExternalAuctionsSection
+            listings={externalAuctions}
+            reportAnchorListingId={externalReportAnchorListingId}
+          />
         ) : null}
         <div id="results" className="results-heading">
           <div>

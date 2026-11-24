@@ -17,4 +17,5 @@ export type ExternalAuctionListing = {
   source_url: string;
   retrieved_at: string;
   withdrawn: boolean;
+  ended_at_source?: boolean;
 };

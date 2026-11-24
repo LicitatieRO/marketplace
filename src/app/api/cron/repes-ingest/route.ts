@@ -8,10 +8,10 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
-function authorized(request: Request): boolean {
-  const expected = process.env.CRON_SECRET;
-  const actual = request.headers.get("authorization") ?? "";
+export function cronRequestAuthorized(request: Request): boolean {
+  const expected = process.env.CRON_SECRET?.trim();
   if (!expected) return false;
+  const actual = request.headers.get("authorization") ?? "";
   const a = Buffer.from(actual);
   const b = Buffer.from(`Bearer ${expected}`);
   return a.length === b.length && timingSafeEqual(a, b);
@@ -21,9 +21,9 @@ export async function POST(request: Request) {
   try {
     const host = request.headers.get("host");
     if (!isRepesExternalAuctionsEnabled(host)) {
-      throw new RequestError("REPES external auctions disabled.", 404);
+      return json({ status: "disabled" });
     }
-    if (!authorized(request)) {
+    if (!cronRequestAuthorized(request)) {
       throw new RequestError("Unauthorized worker request.", 401);
     }
     if (!process.env.SUPABASE_SECRET_KEY?.trim()) {

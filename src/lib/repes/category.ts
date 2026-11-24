@@ -67,7 +67,7 @@ export function repesPropertyTypeForCategory(
 ): string {
   if (listingCategory === "real_estate") {
     const key = (assetCategory ?? "").trim().toUpperCase();
-    return IMO_TO_PROPERTY[key] ?? "apartment";
+    return IMO_TO_PROPERTY[key] ?? "other";
   }
   if (listingCategory === "vehicle") return "vehicle";
   if (listingCategory === "equipment") return "equipment";

@@ -4,6 +4,7 @@ import loadSynthetic from "@/lib/repes/fixtures/synthetic-auctions.json";
 import {
   normalizeRepesCategory,
   normalizeRepesEntryCategory,
+  repesPropertyTypeForCategory,
 } from "@/lib/repes/category";
 
 const entries = (loadSynthetic as { entries: RepesAuctionEntry[] }).entries;
@@ -14,6 +15,13 @@ describe("REPES category normalisation", () => {
     expect(normalizeRepesCategory("AUT", "CAR")).toBe("vehicle");
     expect(normalizeRepesCategory("MAS", "EQP")).toBe("equipment");
     expect(normalizeRepesCategory("DIV", "MISC")).toBe("other");
+  });
+
+  it("maps unknown real-estate wire subtypes to property_type other", () => {
+    expect(
+      normalizeRepesCategory("IMO", "PNT"),
+    ).toBe("real_estate");
+    expect(repesPropertyTypeForCategory("real_estate", "PNT")).toBe("other");
   });
 
   it("normalises fixture rows", () => {

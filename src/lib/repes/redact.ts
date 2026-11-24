@@ -4,6 +4,8 @@ import {
   repesPropertyTypeForCategory,
   type ExternalAuctionCategory,
 } from "@/lib/repes/category";
+import { assertAllowedRepesSourceUrl } from "@/lib/repes/source-url";
+import { stripSensitiveFragments } from "@/lib/repes/scrub-text";
 
 /** Allowlisted fields persisted and shown after ingest redaction. */
 export type RedactedExternalAuction = {
@@ -25,42 +27,12 @@ export type RedactedExternalAuction = {
   withdrawn: boolean;
 };
 
-const CNP_PATTERN = /\b[12]\d{12}\b/g;
-const CF_PATTERN =
-  /\b(c\.?\s*f\.?|carte\s+funciar[ăa]|nr\.?\s*cf|cadastral)\s*[:\s#-]*\d*/giu;
-const DEBTOR_CREDITOR_PATTERN =
-  /\b(?:debitor|creditor|debitorul|creditorul)\b[^.;,\n]{0,120}/giu;
-const PERSONAL_NAME_AFTER_ROLE =
-  /\b(?:debitor|creditor)\s+(?:[A-ZĂÂÎȘȚ][\p{L}'-]+(?:\s+[A-ZĂÂÎȘȚ][\p{L}'-]+)+)/giu;
-const CASE_FILE_PATTERN =
-  /\b\d{1,6}\s*\/\s*ex\s*\/\s*\d{4}\b|\b(?:dosar|file)\s*(?:nr\.?)?\s*[:#]?\s*[\w/-]+/giu;
-const EMAIL_PATTERN = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu;
-const PHONE_PATTERN = /(?:\+40|0)\s*[\d\s.-]{8,14}/g;
-const VIN_PATTERN = /\b[A-HJ-NPR-Z0-9]{17}\b/gi;
-const PLATE_PATTERN =
-  /\b(?:nr\.?\s*)?(?:înmatriculare|inmatriculare|plate)?\s*[:\s-]*[A-Z]{1,2}[\s-]*\d{2,3}[\s-]*[A-Z]{3}\b/giu;
-const PLATE_COMPACT_PATTERN = /\b[A-Z]{1,2}\s*-?\s*\d{2,3}\s*-?\s*[A-Z]{3}\b/g;
-
-function stripSensitiveFragments(text: string): string {
-  return text
-    .replace(DEBTOR_CREDITOR_PATTERN, "")
-    .replace(PERSONAL_NAME_AFTER_ROLE, "")
-    .replace(CNP_PATTERN, "")
-    .replace(CF_PATTERN, "")
-    .replace(CASE_FILE_PATTERN, "")
-    .replace(VIN_PATTERN, "")
-    .replace(PLATE_PATTERN, "")
-    .replace(PLATE_COMPACT_PATTERN, "")
-    .replace(EMAIL_PATTERN, "")
-    .replace(PHONE_PATTERN, "");
-}
-
 function minorUnits(value: number | undefined): number {
   if (value === undefined || !Number.isFinite(value)) return 0;
   return Math.round(value * 100);
 }
 
-function parseAreaSqm(entry: RepesAuctionEntry): number | null {
+function parseAreaSqmFromProperties(entry: RepesAuctionEntry): number | null {
   const props = entry.asset?.properties ?? [];
   for (const row of props) {
     const name = (row.name ?? "").toLocaleLowerCase("ro");
@@ -69,14 +41,6 @@ function parseAreaSqm(entry: RepesAuctionEntry): number | null {
       const parsed = Number(digits);
       if (Number.isFinite(parsed) && parsed > 0) return Math.round(parsed);
     }
-  }
-  const haystack = stripSensitiveFragments(
-    `${entry.asset?.name ?? ""} ${entry.asset?.description ?? ""}`,
-  );
-  const match = haystack.match(/(\d{1,5}(?:[.,]\d{1,2})?)\s*m(?:²|2|p)?\b/i);
-  if (match) {
-    const parsed = Number(match[1].replace(",", "."));
-    if (Number.isFinite(parsed)) return Math.round(parsed);
   }
   return null;
 }
@@ -97,24 +61,27 @@ function localityFromEntry(entry: RepesAuctionEntry): string {
 function repesSourceUrl(caseId: string, auctionId: string): string {
   const encCase = encodeURIComponent(caseId);
   const encId = encodeURIComponent(auctionId);
-  return `https://prod.executori.ro/repes/#/auction/${encCase}/${encId}`;
+  const raw = `https://prod.executori.ro/repes/#/auction/${encCase}/${encId}`;
+  return assertAllowedRepesSourceUrl(raw);
 }
 
 function issuingAuthority(entry: RepesAuctionEntry): string {
   const org = entry.auctioneer?.organisation;
-  const raw = org?.description?.trim() || org?.name?.trim() || "";
+  const raw = org?.name?.trim() ?? "";
   const cleaned = stripSensitiveFragments(raw).replace(/\s+/g, " ").trim();
   if (cleaned) return cleaned.slice(0, 160);
   return "Executor judecătoresc (REPES)";
 }
 
-/**
- * Pure allowlist redaction: drops debtor/creditor identity, addresses, case ids, CF/cadastral refs, VIN/plates.
- */
+export function buildRepesSourceId(caseIdHash: string, auctionId: string): string {
+  return `repes:${caseIdHash}:${auctionId}`;
+}
+
 export function redactRepesAuctionEntry(
   entry: RepesAuctionEntry,
+  caseIdHash: string,
 ): RedactedExternalAuction | null {
-  if (!entry.id || !entry.caseId) return null;
+  if (!entry.id || !entry.caseId || !caseIdHash) return null;
 
   const listingCategory = normalizeRepesEntryCategory(entry);
   if (!listingCategory) return null;
@@ -139,33 +106,38 @@ export function redactRepesAuctionEntry(
   if (!auctionAt) return null;
 
   const withdrawn = (entry.status ?? "").toUpperCase() !== "ACT";
+
   const propertyType = repesPropertyTypeForCategory(
     listingCategory,
     entry.asset?.category,
   );
 
+  let sourceUrl: string;
+  try {
+    sourceUrl = repesSourceUrl(entry.caseId, entry.id);
+  } catch {
+    return null;
+  }
+
   return {
     source: "repes",
-    source_id: `repes:${entry.caseId}:${entry.id}`,
-    repes_case_id: entry.caseId,
+    source_id: buildRepesSourceId(caseIdHash, entry.id),
+    repes_case_id: caseIdHash,
     repes_auction_id: entry.id,
     category: listingCategory,
     property_type: propertyType,
     locality_label: localityFromEntry(entry),
     judet,
     area_sqm:
-      listingCategory === "real_estate" ? parseAreaSqm(entry) : null,
+      listingCategory === "real_estate" ? parseAreaSqmFromProperties(entry) : null,
     price_minor: priceMinor,
     currency,
     guarantee_minor: guaranteeMinor,
     auction_at: auctionAt,
     issuing_authority: issuingAuthority(entry),
-    source_url: repesSourceUrl(entry.caseId, entry.id),
+    source_url: sourceUrl,
     withdrawn,
   };
 }
 
-/** Scrub free-text snippets (used in tests to prove embedded PII removal). */
-export function scrubRepesFreeText(text: string): string {
-  return stripSensitiveFragments(text).replace(/\s+/g, " ").trim();
-}
+export { scrubRepesFreeText } from "@/lib/repes/scrub-text";

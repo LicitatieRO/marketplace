@@ -63,3 +63,7 @@ export function externalAuctionWithdrawnLabel(language: Language): string {
 export function externalAuctionOfficialNoticeCta(language: Language): string {
   return language === "ro" ? "Vezi anunțul oficial" : "View official notice";
 }
+
+export function externalAuctionEndedAtSourceLabel(language: Language): string {
+  return language === "ro" ? "Încheiată la sursă" : "Ended at source";
+}

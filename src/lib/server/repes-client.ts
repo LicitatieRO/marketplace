@@ -8,6 +8,9 @@ import type {
 export const REPES_API_BASE = "https://prod.executori.ro/repes/api";
 export const REPES_HTTP_USER_AGENT =
   "LicitatieRO-POC/0.1 (+https://github.com/LicitatieRO/marketplace; contact: privacy)";
+export const REPES_FETCH_MAX_PAGES = 3;
+export const REPES_FETCH_MAX_ENTRIES = 75;
+export const REPES_FETCH_TIMEOUT_MS = 30_000;
 
 export type FetchRepesOptions = {
   page?: number;
@@ -46,6 +49,8 @@ export async function fetchRepesAuctionPage(
   const page = Math.max(0, options.page ?? 0);
   const pageSize = Math.min(PAGE_SIZE_MAX, Math.max(1, options.pageSize ?? 20));
   const url = `${REPES_API_BASE}/auctions?page=${page}&pageSize=${pageSize}`;
+  const signal =
+    options.signal ?? AbortSignal.timeout(REPES_FETCH_TIMEOUT_MS);
   let attempt = 0;
   const maxAttempts = 3;
   while (attempt < maxAttempts) {
@@ -56,7 +61,7 @@ export async function fetchRepesAuctionPage(
           Accept: "application/json",
           "User-Agent": REPES_HTTP_USER_AGENT,
         },
-        signal: options.signal,
+        signal,
         next: { revalidate: 0 },
       });
       if (response.status === 429) {
@@ -81,8 +86,39 @@ export async function fetchRepesAuctionPage(
   return { totalCount: 0, entries: [] };
 }
 
+export async function fetchRepesAuctionPages(options: {
+  useFixture?: boolean;
+  maxPages?: number;
+  maxEntries?: number;
+}): Promise<RepesAuctionListResponse[]> {
+  const maxPages = Math.min(
+    REPES_FETCH_MAX_PAGES,
+    Math.max(1, options.maxPages ?? 1),
+  );
+  const maxEntries = Math.min(
+    REPES_FETCH_MAX_ENTRIES,
+    Math.max(1, options.maxEntries ?? REPES_FETCH_MAX_ENTRIES),
+  );
+  const pages: RepesAuctionListResponse[] = [];
+  let totalEntries = 0;
+  for (let page = 0; page < maxPages; page += 1) {
+    const chunk = await fetchRepesAuctionPage({
+      page,
+      pageSize: PAGE_SIZE_MAX,
+      fixture: options.useFixture,
+    });
+    pages.push(chunk);
+    totalEntries += chunk.entries?.length ?? 0;
+    if (totalEntries >= maxEntries) break;
+    if ((chunk.entries?.length ?? 0) < PAGE_SIZE_MAX) break;
+  }
+  return pages;
+}
+
 export function collectRepesPages(
   responses: RepesAuctionListResponse[],
+  maxEntries = REPES_FETCH_MAX_ENTRIES,
 ): RepesAuctionEntry[] {
-  return responses.flatMap((page) => page.entries ?? []);
+  const rows = responses.flatMap((page) => page.entries ?? []);
+  return rows.slice(0, maxEntries);
 }

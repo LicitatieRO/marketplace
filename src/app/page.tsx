@@ -17,6 +17,7 @@ export default async function Home() {
     <Catalogue
       listings={listings}
       externalAuctions={externalEnabled ? externalAuctions : undefined}
+      externalReportAnchorListingId={listings[0]?.id}
     />
   );
 }

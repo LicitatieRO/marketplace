@@ -5,6 +5,7 @@ import type { ExternalAuctionListing } from "@/lib/types-external-auction";
 import type { Language } from "@/lib/types";
 import {
   externalAuctionDisclaimer,
+  externalAuctionEndedAtSourceLabel,
   externalAuctionOfficialNoticeCta,
   externalAuctionPocNote,
   externalAuctionSourceBadge,
@@ -12,8 +13,10 @@ import {
   externalAuctionVerifyAtSource,
   externalAuctionWithdrawnLabel,
 } from "@/lib/external-auction-copy";
+import { isAllowedRepesSourceUrl } from "@/lib/repes/source-url";
 import { usePlatform } from "@/components/platform";
 
+const BUCHAREST_TZ = "Europe/Bucharest";
 const FORBIDDEN_CONTROL_LABELS = [
   "place_bid",
   "confirm",
@@ -37,15 +40,18 @@ function assetTitle(
   if (listing.category === "vehicle") return t("Vehicul", "Vehicle");
   if (listing.category === "equipment") return t("Utilaj / echipament", "Equipment");
   if (listing.category === "other") return t("Bun mobil", "Movable asset");
+  if (listing.property_type === "other")
+    return t("Imobil", "Property");
   if (listing.property_type === "house") return t("Casă", "House");
   if (listing.property_type === "land") return t("Teren", "Land");
   if (listing.property_type === "commercial") return t("Comercial", "Commercial");
-  return t("Apartament", "Apartment");
+  if (listing.property_type === "apartment") return t("Apartament", "Apartment");
+  return t("Imobil", "Property");
 }
 
 export function ExternalAuctionCardView({
   listing,
-  reportHref = "/legal/privacy",
+  reportHref,
   language,
   t,
 }: Props & {
@@ -54,14 +60,17 @@ export function ExternalAuctionCardView({
 }) {
   const locale: Language = language;
   const sourceName = t("REPES / executori.ro", "REPES / executori.ro");
-  const auctionDate = new Date(listing.auction_at).toLocaleString(
-    language === "ro" ? "ro-RO" : "en-GB",
-    { dateStyle: "medium", timeStyle: "short" },
-  );
-  const retrievalDate = new Date(listing.retrieved_at).toLocaleString(
-    language === "ro" ? "ro-RO" : "en-GB",
-    { dateStyle: "medium", timeStyle: "short" },
-  );
+  const localeId = language === "ro" ? "ro-RO" : "en-GB";
+  const auctionDate = new Date(listing.auction_at).toLocaleString(localeId, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: BUCHAREST_TZ,
+  });
+  const retrievalDate = new Date(listing.retrieved_at).toLocaleString(localeId, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: BUCHAREST_TZ,
+  });
   const formatMoney = (minor: number, currency: string) =>
     new Intl.NumberFormat(language === "ro" ? "ro-RO" : "en-IE", {
       style: "currency",
@@ -69,6 +78,10 @@ export function ExternalAuctionCardView({
       maximumFractionDigits: minor % 100 ? 2 : 0,
     }).format(minor / 100);
   const priceLabel = formatMoney(listing.price_minor, listing.currency);
+  const safeSourceUrl = isAllowedRepesSourceUrl(listing.source_url)
+    ? listing.source_url
+    : null;
+  const ended = listing.ended_at_source === true;
 
   return (
     <article
@@ -84,6 +97,11 @@ export function ExternalAuctionCardView({
           {listing.withdrawn ? (
             <span className="badge" data-testid="external-auction-withdrawn">
               {externalAuctionWithdrawnLabel(locale)}
+            </span>
+          ) : null}
+          {ended ? (
+            <span className="badge" data-testid="external-auction-ended">
+              {externalAuctionEndedAtSourceLabel(locale)}
             </span>
           ) : null}
         </div>
@@ -120,20 +138,29 @@ export function ExternalAuctionCardView({
         <p className="external-auction-meta">
           {t("Ultima verificare", "Last checked")}: {retrievalDate}
         </p>
-        <a
-          className="button-link external-auction-source-link"
-          href={listing.source_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          data-testid="external-auction-source-link"
-        >
-          {externalAuctionOfficialNoticeCta(locale)} <ExternalLink size={14} />
-        </a>
-        <p className="external-auction-takedown">
-          <ShieldAlert size={14} aria-hidden />
-          {externalAuctionTakedown(locale)}{" "}
-          <a href={reportHref}>{t("Formular de raportare", "Report form")}</a>
-        </p>
+        {safeSourceUrl ? (
+          <a
+            className="button-link external-auction-source-link"
+            href={safeSourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="external-auction-source-link"
+          >
+            {externalAuctionOfficialNoticeCta(locale)} <ExternalLink size={14} />
+          </a>
+        ) : null}
+        {reportHref ? (
+          <p className="external-auction-takedown">
+            <ShieldAlert size={14} aria-hidden />
+            {externalAuctionTakedown(locale)}{" "}
+            <a href={reportHref}>{t("Formular de raportare", "Report form")}</a>
+          </p>
+        ) : (
+          <p className="external-auction-takedown">
+            <ShieldAlert size={14} aria-hidden />
+            {externalAuctionTakedown(locale)}
+          </p>
+        )}
         <p className="external-auction-poc-note">{externalAuctionPocNote(locale)}</p>
       </div>
     </article>

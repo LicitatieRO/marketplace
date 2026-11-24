@@ -1,7 +1,11 @@
 import "server-only";
 import { filterBucharestIlfovRepesEntries } from "@/lib/repes/region-filter";
 import { redactRepesAuctionEntry } from "@/lib/repes/redact";
-import { fetchRepesAuctionPage } from "@/lib/server/repes-client";
+import {
+  collectRepesPages,
+  fetchRepesAuctionPages,
+} from "@/lib/server/repes-client";
+import { hashRepesCaseId } from "@/lib/server/repes-case-id-hash";
 import { serviceRoleClient } from "@/lib/server/service-role";
 
 export type RepesIngestSummary = {
@@ -9,35 +13,34 @@ export type RepesIngestSummary = {
   filtered: number;
   upserted: number;
   skipped: number;
+  purged: number;
 };
 
 export async function runRepesIngest(options: {
   useFixture?: boolean;
   maxPages?: number;
 }): Promise<RepesIngestSummary> {
-  const maxPages = Math.min(3, Math.max(1, options.maxPages ?? 1));
-  const pages = [];
-  for (let page = 0; page < maxPages; page += 1) {
-    pages.push(
-      await fetchRepesAuctionPage({
-        page,
-        pageSize: 25,
-        fixture: options.useFixture,
-      }),
-    );
-  }
+  const pages = await fetchRepesAuctionPages({
+    useFixture: options.useFixture,
+    maxPages: options.maxPages,
+  });
   const fetched = pages.reduce(
     (sum, p) => sum + (p.entries?.length ?? 0),
     0,
   );
-  const regional = filterBucharestIlfovRepesEntries(
-    pages.flatMap((p) => p.entries ?? []),
-  );
+  const regional = filterBucharestIlfovRepesEntries(collectRepesPages(pages));
   const redacted = regional
-    .map((entry) => redactRepesAuctionEntry(entry))
+    .map((entry) => {
+      const caseHash = hashRepesCaseId(entry.caseId);
+      return redactRepesAuctionEntry(entry, caseHash);
+    })
     .filter((row): row is NonNullable<typeof row> => row !== null);
 
   const db = serviceRoleClient();
+  const purgedResult = await db.rpc("purge_stale_external_auction_listings");
+  const purged =
+    typeof purgedResult.data === "number" ? purgedResult.data : 0;
+
   let upserted = 0;
   for (const row of redacted) {
     const { error } = await db.rpc("upsert_external_auction_listing", {
@@ -66,5 +69,6 @@ export async function runRepesIngest(options: {
     filtered: regional.length,
     upserted,
     skipped: regional.length - redacted.length,
+    purged,
   };
 }

@@ -55,7 +55,7 @@
     "supabase": "^2.75.0",
     "tailwindcss": "^4.2.1",
     "typescript": "^6.0.3",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   },
   "engines": {
     "node": ">=26 <27"
